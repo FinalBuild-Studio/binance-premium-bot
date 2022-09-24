@@ -19,6 +19,7 @@ require (
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/schollz/progressbar/v3 v3.11.0
 	github.com/shopspring/decimal v1.3.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/thoas/go-funk v0.9.2
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 )

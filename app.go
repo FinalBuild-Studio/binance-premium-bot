@@ -13,6 +13,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"github.com/schollz/progressbar/v3"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"github.com/thoas/go-funk"
 
 	binance "github.com/CapsLock-Studio/binance-premium-index/models"
@@ -88,23 +89,48 @@ func main() {
 
 	totalQuantity := *total
 	quantityPerOrder := *quantity
-	progressBarTotal := int64(totalQuantity / quantityPerOrder)
+	progressBarTotal := int(totalQuantity / quantityPerOrder)
 
 	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
 		progressBarTotal += 1
 	}
 
 	// initialize bar
-	bar := progressbar.Default(progressBarTotal)
+	bar := &progressbar.ProgressBar{}
+
+	// initialize flag
+	var direction *bool
+
+	var fundingRateReverseMode bool
+
+	// initialize step
+	step := 1
+
+	logrus.Info("I'm trying to place some orders...")
+	logrus.Info("Please be patient and keep waiting...")
 
 	for {
-		if totalQuantity <= 0 {
+		if totalQuantity <= 0 && *reduce {
 			break
+		}
+
+		if totalQuantity >= *total {
+			totalQuantity = *total
+
+			// create new bar
+			if !fundingRateReverseMode {
+				bar = progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
+			}
+
+			fundingRateReverseMode = false
+			step = 1
 		}
 
 		// update quantity per order
 		if quantityPerOrder > totalQuantity {
 			quantityPerOrder = totalQuantity
+		} else {
+			quantityPerOrder = *quantity
 		}
 
 		hedge := make([]binance.BinanceHedge, 0)
@@ -118,19 +144,36 @@ func main() {
 					break
 				}
 
-				useLeverage := map[string]interface{}{
-					"leverage": *leverage,
-					"symbol":   v.Symbol,
+				if fundingRateReverseMode {
+					v.Direction = !v.Direction
 				}
-
-				fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
 
 				var usdtBidSize float64
 				var usdtAskSize float64
 				var busdBidSize float64
 				var busdAskSize float64
 
+				useLeverage := map[string]interface{}{
+					"leverage": *leverage,
+				}
+
 				wg := sync.WaitGroup{}
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+
+					useLeverage["symbol"] = v.Symbol + "USDT"
+					fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
+				}()
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+
+					useLeverage["symbol"] = v.Symbol + "BUSD"
+					fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
+				}()
 
 				wg.Add(1)
 				go func() {
@@ -163,10 +206,25 @@ func main() {
 				// TODO
 				if *reduce {
 					v.Direction = !v.Direction
+				} else if direction == nil {
+					direction = &v.Direction
+				} else if *direction != v.Direction {
+					if totalQuantity >= *total {
+						step = 1
+					} else {
+						step = -1
+					}
+
+					direction = &v.Direction
+
+					// reset quantity
+					quantityPerOrder = *quantity
+
+					fmt.Println()
+					logrus.Info("direction changed, close orders...")
+					bar = progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
 				}
 
-				// true = LONG BUSD, short USDT
-				// false = LONG USDT, short BUSD
 				binanceOrderBUSD := BinancePlaceOrder{
 					Type:   "MARKET",
 					Symbol: v.Symbol + "BUSD",
@@ -192,15 +250,25 @@ func main() {
 				orders = append(orders, binanceOrderUSDT)
 
 				// place binance order
-				fapi(
-					"/batchOrders",
-					gorequest.POST,
-					*apiKey,
-					orders,
-				).End()
+				if totalQuantity > 0 {
+					fapi(
+						"/batchOrders",
+						gorequest.POST,
+						*apiKey,
+						orders,
+					).End()
+				}
 
 				// update total
-				totalQuantity -= quantityPerOrder
+				value := decimal.
+					NewFromFloat(quantityPerOrder).
+					Mul(decimal.NewFromInt(int64(step)))
+
+				// calculate totalQuantity
+				totalQuantity, _ = decimal.
+					NewFromFloat(totalQuantity).
+					Sub(value).
+					Float64()
 
 				// add bar status
 				bar.Add(1)
@@ -212,7 +280,4 @@ func main() {
 
 		time.Sleep(1 * time.Second)
 	}
-
-	// done
-	fmt.Println("DONE! Happy hedge mode!")
 }
