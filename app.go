@@ -89,7 +89,7 @@ func main() {
 	quantityPerOrder := *quantity
 	progressBarTotal := int64(totalQuantity / quantityPerOrder)
 
-	if math.Mod(totalQuantity, quantityPerOrder) > 0 {
+	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
 		progressBarTotal += 1
 	}
 
