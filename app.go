@@ -80,8 +80,8 @@ func main() {
 		}
 
 		// update quantity per order
-		if quantityPerOrder > float64(totalQuantity) {
-			quantityPerOrder = float64(totalQuantity)
+		if quantityPerOrder > totalQuantity {
+			quantityPerOrder = totalQuantity
 		}
 
 		res, err := http.Get("https://wiwisorich.capslock.tw")
