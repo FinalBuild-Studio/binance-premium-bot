@@ -23,7 +23,6 @@ func getDepth(
 ) (
 	bidSize float64,
 	askSize float64,
-	err error,
 ) {
 	depthURL, err := url.Parse("https://fapi.binance.com/fapi/v1/depth")
 	if err != nil {
@@ -112,13 +111,13 @@ func main() {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					usdtBidSize, usdtAskSize, _ = getDepth(v.Symbol, "USDT")
+					usdtBidSize, usdtAskSize = getDepth(v.Symbol, "USDT")
 				}()
 
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					busdBidSize, busdAskSize, _ = getDepth(v.Symbol, "BUSD")
+					busdBidSize, busdAskSize = getDepth(v.Symbol, "BUSD")
 				}()
 
 				// wait sync group
