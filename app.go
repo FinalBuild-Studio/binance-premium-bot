@@ -43,7 +43,7 @@ func getDepth(
 	}{}
 
 	fapi(
-		"/fapi/v1/depth?"+params.Encode(),
+		"/depth?"+params.Encode(),
 		gorequest.GET,
 		"",
 		nil,
@@ -63,7 +63,7 @@ func fapi(
 ) *gorequest.SuperAgent {
 	req := gorequest.
 		New().
-		CustomMethod(method, "https://fapi.binance.com"+path)
+		CustomMethod(method, "https://fapi.binance.com/fapi/v1"+path)
 
 	req.Header.Set("X-MBX-APIKEY", apiKey)
 
@@ -122,7 +122,7 @@ func main() {
 					"symbol":   v.Symbol,
 				}
 
-				fapi("/fapi/v1/leverage", gorequest.POST, *apiKey, useLeverage).End()
+				fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
 
 				var usdtBidSize float64
 				var usdtAskSize float64
@@ -192,7 +192,7 @@ func main() {
 
 				// place binance order
 				fapi(
-					"/fapi/v1/batchOrders",
+					"/batchOrders",
 					gorequest.POST,
 					*apiKey,
 					orders,
