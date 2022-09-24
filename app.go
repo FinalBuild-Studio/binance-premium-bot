@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"math"
 	"net/url"
 	"strconv"
@@ -213,4 +214,5 @@ func main() {
 	}
 
 	// done
+	fmt.Println("DONE! Happy hedge mode!")
 }
