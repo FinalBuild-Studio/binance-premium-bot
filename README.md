@@ -2,6 +2,14 @@
 
 :warning: **This bot is for test only!** :warning:
 
+It helps you create double-side contract order to generate funding fee with without loss. It's possible to make incredible APR(>500%) on crypto market.
+
+## How to build
+
+```bash
+go build
+```
+
 ## Usage
 
 ```
