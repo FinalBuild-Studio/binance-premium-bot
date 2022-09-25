@@ -96,11 +96,10 @@ func main() {
 	}
 
 	// initialize bar
-	bar := &progressbar.ProgressBar{}
+	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
 
 	// initialize flag
 	var direction *bool
-
 	var fundingRateReverseMode bool
 
 	// initialize step
@@ -119,7 +118,7 @@ func main() {
 
 			// create new bar
 			if !fundingRateReverseMode {
-				bar = progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
+				bar.Reset()
 			}
 
 			fundingRateReverseMode = false
@@ -222,16 +221,18 @@ func main() {
 
 					fmt.Println()
 					logrus.Info("direction changed, close orders...")
-					bar = progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
+					bar.Reset()
 				}
 
 				binanceOrderBUSD := BinancePlaceOrder{
-					Type:   "MARKET",
-					Symbol: v.Symbol + "BUSD",
+					Type:     "MARKET",
+					Symbol:   v.Symbol + "BUSD",
+					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
 				}
 				binanceOrderUSDT := BinancePlaceOrder{
-					Type:   "MARKET",
-					Symbol: v.Symbol + "USDT",
+					Type:     "MARKET",
+					Symbol:   v.Symbol + "USDT",
+					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
 				}
 
 				if v.Direction {
@@ -241,9 +242,6 @@ func main() {
 					binanceOrderBUSD.Side = "SELL"
 					binanceOrderUSDT.Side = "BUY"
 				}
-
-				binanceOrderUSDT.Quantity = decimal.NewFromFloat(quantityPerOrder).String()
-				binanceOrderBUSD.Quantity = decimal.NewFromFloat(quantityPerOrder).String()
 
 				orders := make([]BinancePlaceOrder, 0)
 				orders = append(orders, binanceOrderBUSD)
