@@ -157,7 +157,7 @@ func main() {
 					"leverage": *leverage,
 				}
 
-				wg := sync.WaitGroup{}
+				wg := &sync.WaitGroup{}
 
 				wg.Add(1)
 				go func() {
