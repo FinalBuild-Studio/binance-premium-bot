@@ -1,8 +1,8 @@
 # binance-premium-bot
 
-## This bot is for test only!
+:warning: **This bot is for test only!** :warning:
 
-### Usage
+## Usage
 
 ```
 Usage of ./binance-premium-bot:
@@ -24,9 +24,8 @@ Usage of ./binance-premium-bot:
     	total quantity
 ```
 
-### Example
+## Example
 
 ```bash
 go app.go -total 0.002 -quantity 0.001 -symbol BTC -apiKey XXX -apiSecret XXX
 ```
-
