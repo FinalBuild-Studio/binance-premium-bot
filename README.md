@@ -4,10 +4,27 @@
 
 It helps you create double-side contract order to generate funding fee without loss. It's possible to make incredible APR(>500%) on crypto market.
 
-## How to build
+## What you should prepare first
+
+1. Binance API Key & Secret
+2. golang 1.19 | docker
+
+## How to build and use
+
+### For executable binary
 
 ```bash
 go build
+
+./binance-premium-bot --help
+```
+
+### For docker
+
+```bash
+docker build . -t binance-premium-bot
+
+docker run -it --rm binance-premium-bot --help
 ```
 
 ## Usage
