@@ -37,22 +37,20 @@ func getDepth(
 	bidSize float64,
 	askSize float64,
 ) {
-	// check depth
-	params := url.Values{}
-	params.Add("limit", "5")
-	params.Add("symbol", symbol+currency)
-
 	bidAndAsk := struct {
 		Asks [][]string `json:"asks"`
 		Bids [][]string `json:"bids"`
 	}{}
 
 	fapi(
-		"/depth?"+params.Encode(),
+		"/depth",
 		gorequest.GET,
 		"",
 		"",
-		nil,
+		map[string]string{
+			"limit":  "5",
+			"symbol": symbol + currency,
+		},
 	).EndStruct(&bidAndAsk)
 
 	bidSize, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][1], 64)
