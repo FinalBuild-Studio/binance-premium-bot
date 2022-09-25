@@ -49,8 +49,8 @@ Usage of ./binance-premium-bot:
     	total quantity
 ```
 
-## Example
+## Example (docker for example)
 
 ```bash
-go app.go -total 0.002 -quantity 0.001 -symbol BTC -apiKey XXX -apiSecret XXX
+docker run -it --rm binance-premium-bot -total 0.002 -quantity 0.001 -symbol BTC -apiKey XXX -apiSecret XXX
 ```
