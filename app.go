@@ -112,6 +112,8 @@ func main() {
 		progressBarTotal += 1
 	}
 
+	currentProgressBarTotal := 0
+
 	// initialize bar
 	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
 
@@ -136,10 +138,16 @@ func main() {
 			// create new bar
 			if !fundingRateReverseMode {
 				bar.Reset()
+
+				currentProgressBarTotal = 0
 			}
 
-			fundingRateReverseMode = false
-			step = 1
+			if bar.IsFinished() {
+				fundingRateReverseMode = false
+				step = 1
+
+				bar.ChangeMax(progressBarTotal)
+			}
 		}
 
 		// update quantity per order
@@ -217,6 +225,9 @@ func main() {
 					break
 				}
 
+				// add bar status
+				bar.Add(1)
+
 				// handle order
 				// X-MBX-APIKEY
 				// TODO
@@ -239,7 +250,19 @@ func main() {
 					fmt.Println()
 					logrus.Info("direction changed, close orders...")
 					bar.Reset()
+
+					// change max
+					if currentProgressBarTotal > progressBarTotal {
+						bar.ChangeMax(progressBarTotal)
+					} else {
+						bar.ChangeMax(currentProgressBarTotal)
+					}
+
+					currentProgressBarTotal = 0
 				}
+
+				// update var
+				currentProgressBarTotal += 1
 
 				binanceOrderBUSD := BinancePlaceOrder{
 					Type:     "MARKET",
@@ -260,7 +283,7 @@ func main() {
 					binanceOrderUSDT.Side = "BUY"
 				}
 
-				if *reduce {
+				if *reduce || fundingRateReverseMode {
 					binanceOrderBUSD.ReduceOnly = "true"
 					binanceOrderUSDT.ReduceOnly = "true"
 				}
@@ -294,9 +317,6 @@ func main() {
 					NewFromFloat(totalQuantity).
 					Sub(value).
 					Float64()
-
-				// add bar status
-				bar.Add(1)
 
 				// exit loop
 				break
