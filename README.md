@@ -2,12 +2,13 @@
 
 :warning: **This bot is for test only!** :warning:
 
-It helps you create double-side contract order to generate funding fee without loss. It's possible to make incredible APR(>500%) on crypto market.
+It helps you create double-side contract order to generate funding fee without loss(delta natural hedge strategy).
+It's possible to make incredible APR(>500%) in crypto even in :bear: market
 
 ## What you should prepare first
 
-1. Binance API Key & Secret
-2. golang 1.19 | docker
+1. Binance API Key & Secret, you can learn how to create [here](https://www.binance.com/en/amp/support/faq/360002502072)
+2. golang 1.19 or docker
 
 ## How to build and use
 
