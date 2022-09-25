@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -21,10 +23,11 @@ import (
 
 // {"type":"MARKET","symbol":"BTCUSDT","side":"BUY","quantity":"0.001"}
 type BinancePlaceOrder struct {
-	Type     string `json:"type"`
-	Symbol   string `json:"symbol"`
-	Side     string `json:"side"`
-	Quantity string `json:"quantity"`
+	Type       string `json:"type"`
+	Symbol     string `json:"symbol"`
+	Side       string `json:"side"`
+	Quantity   string `json:"quantity"`
+	ReduceOnly string `json:"reduceOnly"`
 }
 
 func getDepth(
@@ -48,6 +51,7 @@ func getDepth(
 		"/depth?"+params.Encode(),
 		gorequest.GET,
 		"",
+		"",
 		nil,
 	).EndStruct(&bidAndAsk)
 
@@ -60,25 +64,40 @@ func getDepth(
 func fapi(
 	path,
 	method,
-	apiKey string,
-	body interface{},
+	apiKey,
+	apiSecret string,
+	body map[string]string,
 ) *gorequest.SuperAgent {
+	if body != nil {
+		params := url.Values{}
+
+		params.Add("timestamp", decimal.NewFromInt(time.Now().UnixMilli()).String())
+
+		for key, value := range body {
+			params.Add(key, value)
+		}
+
+		mac := hmac.New(sha256.New, []byte(apiSecret))
+		mac.Write([]byte(params.Encode()))
+		signingKey := fmt.Sprintf("%x", mac.Sum(nil))
+
+		params.Add("signature", signingKey)
+
+		path += "?" + params.Encode()
+	}
+
 	req := gorequest.
 		New().
 		CustomMethod(method, "https://fapi.binance.com/fapi/v1"+path)
 
 	req.Header.Set("X-MBX-APIKEY", apiKey)
 
-	if body != nil {
-		data, _ := json.Marshal(body)
-		req.Send(string(data))
-	}
-
 	return req
 }
 
 func main() {
 	apiKey := flag.String("apiKey", "", "binance api key")
+	apiSecret := flag.String("apiSecret", "", "binance api secret")
 	symbol := flag.String("symbol", "", "binance future symbol")
 	quantity := flag.Float64("quantity", 0, "quantity per order")
 	total := flag.Float64("total", 0, "total quantity")
@@ -152,8 +171,8 @@ func main() {
 				var busdBidSize float64
 				var busdAskSize float64
 
-				useLeverage := map[string]interface{}{
-					"leverage": *leverage,
+				useLeverage := map[string]string{
+					"leverage": fmt.Sprint(*leverage),
 				}
 
 				wg := &sync.WaitGroup{}
@@ -163,7 +182,7 @@ func main() {
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "USDT"
-					fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
+					fapi("/leverage", gorequest.POST, *apiKey, *apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
@@ -171,7 +190,7 @@ func main() {
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "BUSD"
-					fapi("/leverage", gorequest.POST, *apiKey, useLeverage).End()
+					fapi("/leverage", gorequest.POST, *apiKey, *apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
@@ -243,17 +262,27 @@ func main() {
 					binanceOrderUSDT.Side = "BUY"
 				}
 
+				if *reduce {
+					binanceOrderBUSD.ReduceOnly = "true"
+					binanceOrderUSDT.ReduceOnly = "true"
+				}
+
 				orders := make([]BinancePlaceOrder, 0)
 				orders = append(orders, binanceOrderBUSD)
 				orders = append(orders, binanceOrderUSDT)
 
 				// place binance order
 				if totalQuantity > 0 {
+					batchOrders, _ := json.Marshal(orders)
+
 					fapi(
 						"/batchOrders",
 						gorequest.POST,
 						*apiKey,
-						orders,
+						*apiSecret,
+						map[string]string{
+							"batchOrders": string(batchOrders),
+						},
 					).End()
 				}
 
@@ -278,4 +307,6 @@ func main() {
 
 		time.Sleep(1 * time.Second)
 	}
+
+	fmt.Println()
 }
