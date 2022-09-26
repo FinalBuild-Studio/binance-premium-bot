@@ -10,7 +10,7 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 ## What you should prepare first
 
 1. Binance API Key & Secret, you can learn how to create [here](https://www.binance.com/en/amp/support/faq/360002502072)
-2. golang 1.19 or docker
+2. golang 1.19 or [docker](https://www.docker.com/get-started/)
 
 ## How to build and use
 
