@@ -36,6 +36,9 @@ docker run -it --rm binance-premium-bot --help
 docker run --pull always -ti --rm ghcr.io/capslock-studio/binance-premium-bot:main --help
 ```
 
+### If you think building your own binary and docker image is too hard for you
+Just check [this](https://github.com/CapsLock-Studio/binance-premium-bot/actions/workflows/go.yml) and download the latest binary
+
 ## Usage
 
 ```
