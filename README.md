@@ -73,10 +73,12 @@ docker run --pull always -it --rm ghcr.io/capslock-studio/binance-premium-bot:ma
 
 ## Auto arbitrage mode
 
-Arbitrage mode is a mode can find chance to arbitrage between USDT & BUSD perpetual.
+Arbitrage mode is a mode can find a chance to arbitrage between USDT & BUSD perpetual.
 You have to set `-arbitrage` flag and let bot run automatically. :smile:
 
-Here are some backtest result(real data)
+Here are some backtest result(real data).
+
+NOTE: Binance taker fee is excluded
 
 |#|CURRENCY|POSITION|BUY|SELL|PROFIT|
 |-|-|-|-|-|-|
