@@ -121,6 +121,7 @@ func main() {
 	arbitrage := flag.Bool("arbitrage", false, "use arbitrage mode")
 	difference := flag.Float64("difference", .05, "BUSD & USDT difference")
 	leverage := flag.Int("leverage", 10, "futures leverage")
+	bidSide := flag.String("bidSide", "", "determine bid side in reduce mode")
 	flag.Parse()
 
 	totalQuantity := *total
@@ -136,7 +137,7 @@ func main() {
 	// initialize bar
 	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
 	manualFundingRateReverseMode := *reduce
-	arbitrageFundingRateDifference := *difference
+	marketPriceDifference := *difference
 	arbitrageAutoMode := *arbitrage
 
 	// initialize flag
@@ -156,6 +157,8 @@ func main() {
 	if arbitrageAutoMode {
 		logrus.Info("You're in arbitrage mode.")
 		logrus.Info("I'll help you place some orders and use reverse mode when differece +0.08%.")
+
+		marketPriceDifference = .08
 	} else {
 		logrus.Info("I'm trying to place some orders...")
 		logrus.Info("Please be patient and keep waiting...")
@@ -168,8 +171,6 @@ func main() {
 
 		// enable arbitrage mode
 		if arbitrageAutoMode && totalQuantity <= 0 {
-			arbitrageFundingRateDifference, _ = decimal.NewFromFloat(*difference).Add(decimal.NewFromFloat(.08)).Float64()
-
 			manualFundingRateReverseMode = true
 			totalQuantity = *total
 			arbitrageTriggered = true
@@ -209,20 +210,25 @@ func main() {
 			if v.Symbol == *symbol {
 				markPriceDirection := binanceIndexDirection(v.Index)
 
-				conditions := []bool{
-					v.MarkPriceGap > arbitrageFundingRateDifference,
-					// not triggered, skip when direction is not as same as old one
-					// triggered, skip when direction is as same as old one
-					arbitrageDirection != nil && ((!arbitrageTriggered && *arbitrageDirection != markPriceDirection) || (arbitrageTriggered && *arbitrageDirection == markPriceDirection)),
+				if arbitrageAutoMode && marketPriceDifference > v.MarkPriceGap {
+					break
 				}
 
-				if funk.Every(conditions, true) {
+				if !arbitrageAutoMode && v.MarkPriceGap > marketPriceDifference {
+					break
+				}
+
+				if arbitrageDirection != nil && ((!arbitrageTriggered && *arbitrageDirection != markPriceDirection) || (arbitrageTriggered && *arbitrageDirection == markPriceDirection)) {
 					break
 				}
 
 				// record arbitrage direction
-				if arbitrageAutoMode && arbitrageDirection == nil {
-					arbitrageDirection = &markPriceDirection
+				if arbitrageAutoMode {
+					if arbitrageDirection == nil {
+						arbitrageDirection = &markPriceDirection
+					}
+
+					v.Direction = *arbitrageDirection
 				}
 
 				if fundingRateReverseMode {
@@ -289,6 +295,12 @@ func main() {
 				// X-MBX-APIKEY
 				if manualFundingRateReverseMode {
 					v.Direction = !v.Direction
+
+					if *bidSide == "BUSD" {
+						v.Direction = false
+					} else if *bidSide == "USDT" {
+						v.Direction = true
+					}
 				} else if direction == nil {
 					direction = &v.Direction
 				} else if *direction != v.Direction {
@@ -331,12 +343,22 @@ func main() {
 					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
 				}
 
-				if v.Direction {
-					binanceOrderBUSD.Side = "BUY"
-					binanceOrderUSDT.Side = "SELL"
+				if arbitrageDirection == nil {
+					if v.Direction {
+						binanceOrderBUSD.Side = "BUY"
+						binanceOrderUSDT.Side = "SELL"
+					} else {
+						binanceOrderBUSD.Side = "SELL"
+						binanceOrderUSDT.Side = "BUY"
+					}
 				} else {
-					binanceOrderBUSD.Side = "SELL"
-					binanceOrderUSDT.Side = "BUY"
+					if v.Direction {
+						binanceOrderBUSD.Side = "SELL"
+						binanceOrderUSDT.Side = "BUY"
+					} else {
+						binanceOrderBUSD.Side = "BUY"
+						binanceOrderUSDT.Side = "SELL"
+					}
 				}
 
 				if manualFundingRateReverseMode || fundingRateReverseMode {

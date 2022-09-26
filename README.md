@@ -47,6 +47,10 @@ Usage of ./binance-premium-bot:
     	binance api key
   -apiSecret string
     	binance api secret
+  -arbitrage
+    	use arbitrage mode
+  -bidSide string
+    	determine bid side in reduce mode
   -difference float
     	BUSD & USDT difference (default 0.05)
   -leverage int
@@ -55,8 +59,6 @@ Usage of ./binance-premium-bot:
     	quantity per order
   -reduce
     	use reduce mode
-  -arbitrage
-    	use rarbitrage mode, auto profit when +0.08%
   -symbol string
     	binance future symbol
   -total float
