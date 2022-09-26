@@ -55,6 +55,8 @@ Usage of ./binance-premium-bot:
     	quantity per order
   -reduce
     	use reduce mode
+  -arbitrage
+    	use rarbitrage mode, auto profit when +0.08%
   -symbol string
     	binance future symbol
   -total float

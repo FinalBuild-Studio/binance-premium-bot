@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -93,6 +94,23 @@ func fapi(
 	return req
 }
 
+func binanceIndexDirection(index []binance.BinancePremium) bool {
+	var busd float64
+	var usdt float64
+
+	for _, v := range index {
+		if strings.HasSuffix(v.Symbol, "BUSD") {
+			busd, _ = strconv.ParseFloat(v.MarkPrice, 64)
+		}
+
+		if strings.HasSuffix(v.Symbol, "USDT") {
+			usdt, _ = strconv.ParseFloat(v.MarkPrice, 64)
+		}
+	}
+
+	return busd > usdt
+}
+
 func main() {
 	apiKey := flag.String("apiKey", "", "binance api key")
 	apiSecret := flag.String("apiSecret", "", "binance api secret")
@@ -100,6 +118,7 @@ func main() {
 	quantity := flag.Float64("quantity", 0, "quantity per order")
 	total := flag.Float64("total", 0, "total quantity")
 	reduce := flag.Bool("reduce", false, "use reduce mode")
+	arbitrage := flag.Bool("arbitrage", false, "use arbitrage mode")
 	difference := flag.Float64("difference", .05, "BUSD & USDT difference")
 	leverage := flag.Int("leverage", 10, "futures leverage")
 	flag.Parse()
@@ -116,20 +135,44 @@ func main() {
 
 	// initialize bar
 	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
+	manualFundingRateReverseMode := *reduce
+	arbitrageFundingRateDifference := *difference
+	arbitrageAutoMode := *arbitrage
 
 	// initialize flag
 	var direction *bool
 	var fundingRateReverseMode bool
+	var arbitrageDirection *bool
+	var arbitrageTriggered bool
+
+	// force set arbitrage=OFF
+	if manualFundingRateReverseMode {
+		arbitrageAutoMode = false
+	}
 
 	// initialize step
 	step := 1
 
-	logrus.Info("I'm trying to place some orders...")
-	logrus.Info("Please be patient and keep waiting...")
+	if arbitrageAutoMode {
+		logrus.Info("You're in arbitrage mode.")
+		logrus.Info("I'll help you place some orders and use reverse mode when differece +0.08%.")
+	} else {
+		logrus.Info("I'm trying to place some orders...")
+		logrus.Info("Please be patient and keep waiting...")
+	}
 
 	for {
-		if totalQuantity <= 0 && *reduce {
+		if totalQuantity <= 0 && manualFundingRateReverseMode {
 			break
+		}
+
+		// enable arbitrage mode
+		if arbitrageAutoMode && totalQuantity <= 0 {
+			arbitrageFundingRateDifference, _ = decimal.NewFromFloat(*difference).Add(decimal.NewFromFloat(.08)).Float64()
+
+			manualFundingRateReverseMode = true
+			totalQuantity = *total
+			arbitrageTriggered = true
 		}
 
 		if totalQuantity >= *total {
@@ -164,8 +207,22 @@ func main() {
 
 		for _, v := range hedge {
 			if v.Symbol == *symbol {
-				if v.MarkPriceGap > *difference {
+				markPriceDirection := binanceIndexDirection(v.Index)
+
+				conditions := []bool{
+					v.MarkPriceGap > arbitrageFundingRateDifference,
+					// not triggered, skip when direction is not as same as old one
+					// triggered, skip when direction is as same as old one
+					arbitrageDirection != nil && ((!arbitrageTriggered && *arbitrageDirection != markPriceDirection) || (arbitrageTriggered && *arbitrageDirection == markPriceDirection)),
+				}
+
+				if funk.Every(conditions, true) {
 					break
+				}
+
+				// record arbitrage direction
+				if arbitrageAutoMode && arbitrageDirection == nil {
+					arbitrageDirection = &markPriceDirection
 				}
 
 				if fundingRateReverseMode {
@@ -230,8 +287,7 @@ func main() {
 
 				// handle order
 				// X-MBX-APIKEY
-				// TODO
-				if *reduce {
+				if manualFundingRateReverseMode {
 					v.Direction = !v.Direction
 				} else if direction == nil {
 					direction = &v.Direction
@@ -283,7 +339,7 @@ func main() {
 					binanceOrderUSDT.Side = "BUY"
 				}
 
-				if *reduce || fundingRateReverseMode {
+				if manualFundingRateReverseMode || fundingRateReverseMode {
 					binanceOrderBUSD.ReduceOnly = "true"
 					binanceOrderUSDT.ReduceOnly = "true"
 				}
