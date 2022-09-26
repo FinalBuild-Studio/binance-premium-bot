@@ -33,7 +33,7 @@ docker run -it --rm binance-premium-bot --help
 ### Run docker image from github registry
 
 ```bash
-docker run -ti --rm ghcr.io/capslock-studio/binance-premium-bot:main --help
+docker run --pull -ti --rm ghcr.io/capslock-studio/binance-premium-bot:main --help
 ```
 
 ## Usage
@@ -61,5 +61,5 @@ Usage of ./binance-premium-bot:
 ## Example (docker for example)
 
 ```bash
-docker run -it --rm ghcr.io/capslock-studio/binance-premium-bot:main -total 0.002 -quantity 0.001 -symbol BTC -apiKey XXX -apiSecret XXX
+docker run --pull -it --rm ghcr.io/capslock-studio/binance-premium-bot:main -total 0.002 -quantity 0.001 -symbol BTC -apiKey XXX -apiSecret XXX
 ```
