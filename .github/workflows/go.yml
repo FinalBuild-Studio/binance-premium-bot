@@ -20,3 +20,8 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: binance-premium-bot
+        path: binance-premium-bot
