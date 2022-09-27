@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +19,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
 
 	binance "github.com/CapsLock-Studio/binance-premium-index/models"
 )
@@ -30,11 +33,32 @@ type BinancePlaceOrder struct {
 	ReduceOnly string `json:"reduceOnly"`
 }
 
+type ConfigSetting struct {
+	Symbol     string  `yaml:"symbol"`
+	ApiKey     string  `yaml:"apiKey"`
+	ApiSecret  string  `yaml:"apiSecret"`
+	Quantity   float64 `yaml:"quantity"`
+	Total      float64 `yaml:"total"`
+	Reduce     bool    `yaml:"reduce"`
+	Arbitrage  bool    `yaml:"arbitrage"`
+	Difference float64 `yaml:"difference"`
+	Leverage   int     `yaml:"leverage"`
+	BidSide    string  `yaml:"bidSide"`
+}
+type Config struct {
+	ApiKey    string          `yaml:"apiKey"`
+	ApiSecret string          `yaml:"apiSecret"`
+	Leverage  int             `json:"leverage"`
+	Settings  []ConfigSetting `yaml:"settings"`
+}
+
 func getDepth(
 	symbol string,
 	currency string,
 ) (
-	bidSize float64,
+	bid,
+	bidSize,
+	ask,
 	askSize float64,
 ) {
 	bidAndAsk := struct {
@@ -53,6 +77,8 @@ func getDepth(
 		},
 	).EndStruct(&bidAndAsk)
 
+	bid, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][0], 64)
+	ask, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][0], 64)
 	bidSize, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][1], 64)
 	askSize, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][1], 64)
 
@@ -121,10 +147,86 @@ func main() {
 	difference := flag.Float64("difference", .05, "BUSD & USDT difference")
 	leverage := flag.Int("leverage", 10, "futures leverage")
 	bidSide := flag.String("bidSide", "", "determine bid side in reduce mode")
+	config := flag.String("config", "", "yaml config for multi-assets")
 	flag.Parse()
 
-	totalQuantity := *total
-	quantityPerOrder := *quantity
+	if *config != "" {
+		filename, _ := filepath.Abs(*config)
+		file, err := ioutil.ReadFile(filename)
+
+		if err != nil {
+			panic(err)
+		}
+
+		config := Config{}
+		yaml.Unmarshal(file, &config)
+
+		wg := &sync.WaitGroup{}
+
+		for _, setting := range config.Settings {
+			wg.Add(1)
+
+			go func(setting ConfigSetting) {
+				defer wg.Done()
+				if setting.ApiKey == "" {
+					setting.ApiKey = config.ApiKey
+				}
+
+				if setting.ApiSecret == "" {
+					setting.ApiSecret = config.ApiSecret
+				}
+
+				if setting.Leverage == 0 {
+					setting.Leverage = config.Leverage
+				}
+
+				run(
+					setting.ApiKey,
+					setting.ApiSecret,
+					setting.Symbol,
+					setting.Quantity,
+					setting.Total,
+					setting.Reduce,
+					setting.Arbitrage,
+					setting.Difference,
+					setting.Leverage,
+					setting.BidSide,
+				)
+			}(setting)
+		}
+
+		wg.Wait()
+	} else {
+		run(
+			*apiKey,
+			*apiSecret,
+			*symbol,
+			*quantity,
+			*total,
+			*reduce,
+			*arbitrage,
+			*difference,
+			*leverage,
+			*bidSide,
+		)
+	}
+}
+
+func run(
+	apiKey,
+	apiSecret,
+	symbol string,
+	quantity,
+	total float64,
+	reduce,
+	arbitrage bool,
+	difference float64,
+	leverage int,
+	bidSide string,
+) {
+	logger := logrus.New().WithField("symbol", symbol)
+	totalQuantity := total
+	quantityPerOrder := quantity
 	progressBarTotal := int(totalQuantity / quantityPerOrder)
 
 	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
@@ -136,9 +238,9 @@ func main() {
 
 	// initialize bar
 
-	manualReduceMode := *reduce
-	marketPriceDifference := *difference
-	arbitrageAutoMode := *arbitrage
+	manualReduceMode := reduce
+	marketPriceDifference := difference
+	arbitrageAutoMode := arbitrage
 
 	// initialize flag
 	var direction *bool
@@ -155,31 +257,39 @@ func main() {
 	step := 1
 
 	if arbitrageAutoMode {
-		logrus.Info("You're in arbitrage mode.")
-		logrus.Info("I'll help you place some orders and use reverse mode when differece +-0.08%.")
-		logrus.Info("Total quantity has been reset.")
+		logger.Info("You're in arbitrage mode.")
+		logger.Info("I'll help you place some orders.")
+		logger.Info("Use reverse mode when differece +-0.08%.")
+		logger.Info("Total quantity has been reset.")
 
+		total = quantity
 		marketPriceDifference = .08
-		totalQuantity = *quantity
+		totalQuantity = total
 	} else {
-		logrus.Info("I'm trying to place some orders...")
-		logrus.Info("Please be patient and keep waiting...")
+		logger.Info("I'm trying to place some orders...")
+		logger.Info("Please be patient and keep waiting...")
 	}
 
 	for {
 		if totalQuantity <= 0 && manualReduceMode {
-			break
+			if arbitrageAutoMode {
+				manualReduceMode = false
+				totalQuantity = total
+				arbitrageTriggered = false
+			} else {
+				break
+			}
 		}
 
 		// enable arbitrage mode
 		if arbitrageAutoMode && totalQuantity <= 0 {
 			manualReduceMode = true
-			totalQuantity = *total
+			totalQuantity = total
 			arbitrageTriggered = true
 		}
 
-		if totalQuantity >= *total {
-			totalQuantity = *total
+		if totalQuantity >= total {
+			totalQuantity = total
 
 			// create new bar
 			if !fundingRateReverseMode {
@@ -198,7 +308,7 @@ func main() {
 		if quantityPerOrder > totalQuantity {
 			quantityPerOrder = totalQuantity
 		} else {
-			quantityPerOrder = *quantity
+			quantityPerOrder = quantity
 		}
 
 		hedge := make([]binance.BinanceHedge, 0)
@@ -207,7 +317,7 @@ func main() {
 		req.EndStruct(&hedge)
 
 		for _, v := range hedge {
-			if v.Symbol == *symbol {
+			if v.Symbol == symbol {
 				markPriceDirection := binanceIndexDirection(v.Index)
 
 				if arbitrageAutoMode && marketPriceDifference > v.MarkPriceGap {
@@ -239,13 +349,17 @@ func main() {
 					v.Direction = !v.Direction
 				}
 
+				var usdtBid float64
+				var usdtAsk float64
+				var busdBid float64
+				var busdAsk float64
 				var usdtBidSize float64
 				var usdtAskSize float64
 				var busdBidSize float64
 				var busdAskSize float64
 
 				useLeverage := map[string]string{
-					"leverage": fmt.Sprint(*leverage),
+					"leverage": fmt.Sprint(leverage),
 				}
 
 				wg := &sync.WaitGroup{}
@@ -255,7 +369,7 @@ func main() {
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "USDT"
-					fapi("/leverage", gorequest.POST, *apiKey, *apiSecret, useLeverage).End()
+					fapi("/leverage", gorequest.POST, apiKey, apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
@@ -263,19 +377,19 @@ func main() {
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "BUSD"
-					fapi("/leverage", gorequest.POST, *apiKey, *apiSecret, useLeverage).End()
+					fapi("/leverage", gorequest.POST, apiKey, apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					usdtBidSize, usdtAskSize = getDepth(v.Symbol, "USDT")
+					usdtBid, usdtBidSize, usdtAsk, usdtAskSize = getDepth(v.Symbol, "USDT")
 				}()
 
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					busdBidSize, busdAskSize = getDepth(v.Symbol, "BUSD")
+					busdBid, busdBidSize, busdAsk, busdAskSize = getDepth(v.Symbol, "BUSD")
 				}()
 
 				// wait sync group
@@ -300,15 +414,15 @@ func main() {
 				if manualReduceMode {
 					v.Direction = !v.Direction
 
-					if *bidSide == "BUSD" {
+					if bidSide == "BUSD" {
 						v.Direction = false
-					} else if *bidSide == "USDT" {
+					} else if bidSide == "USDT" {
 						v.Direction = true
 					}
 				} else if direction == nil {
 					direction = &v.Direction
 				} else if *direction != v.Direction {
-					if totalQuantity >= *total {
+					if totalQuantity >= total {
 						step = 1
 					} else {
 						step = -1
@@ -317,9 +431,9 @@ func main() {
 					direction = &v.Direction
 
 					// reset quantity
-					quantityPerOrder = *quantity
+					quantityPerOrder = quantity
 
-					logrus.Info("direction changed, close orders...")
+					logger.Info("direction changed, close orders...")
 
 					// change max
 					if currentProgressBarTotal > progressBarTotal {
@@ -341,6 +455,11 @@ func main() {
 					Symbol:   v.Symbol + "USDT",
 					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
 				}
+
+				logger.Info("USDT BID=", usdtBid)
+				logger.Info("USDT ASK=", usdtAsk)
+				logger.Info("BUSD BID=", busdBid)
+				logger.Info("BUSD ASK=", busdAsk)
 
 				if arbitrageDirection == nil {
 					if v.Direction {
@@ -373,12 +492,12 @@ func main() {
 				if totalQuantity > 0 {
 					batchOrders, _ := json.Marshal(orders)
 
-					logrus.Info(string(batchOrders))
+					logger.Info(string(batchOrders))
 					fapi(
 						"/batchOrders",
 						gorequest.POST,
-						*apiKey,
-						*apiSecret,
+						apiKey,
+						apiSecret,
 						map[string]string{
 							"batchOrders": string(batchOrders),
 						},

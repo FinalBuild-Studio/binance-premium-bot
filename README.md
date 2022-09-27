@@ -51,6 +51,8 @@ Usage of ./binance-premium-bot:
     	use arbitrage mode
   -bidSide string
     	determine bid side in reduce mode
+  -config string
+    	yaml config for multi-assets
   -difference float
     	BUSD & USDT difference (default 0.05)
   -leverage int

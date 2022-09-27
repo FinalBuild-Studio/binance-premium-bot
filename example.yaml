@@ -1,0 +1,10 @@
+apiKey: ""
+apiSecret: ""
+leverage: 10
+settings:
+- symbol: LDO
+  quantity: 0.0001
+  total: 0.0001
+  reduce: false
+  arbitrage: true
+  difference: 0.08
