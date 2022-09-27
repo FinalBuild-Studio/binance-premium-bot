@@ -225,6 +225,10 @@ func main() {
 				// record arbitrage direction
 				if arbitrageAutoMode {
 					if arbitrageDirection == nil {
+						if markPriceDirection != v.Direction {
+							break
+						}
+
 						arbitrageDirection = &markPriceDirection
 					}
 
