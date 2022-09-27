@@ -94,3 +94,24 @@ NOTE: Binance taker fee is excluded
 |4|CVXUSDT|SHORT|4.76271841|4.78700000|0.5072402339669978%|
 |5|LDOBUSD|SHORT|1.62000000|1.61500000|-0.30959752321982137%|
 |5|LDOUSDT|LONG|1.61356730|1.62200000|0.5226122269582547%|
+
+## Use config file
+
+Now I've provided a more efficient way to run your own bot!
+You can just create a yaml file and use `-config` flag.
+
+For example
+
+```yaml
+apiKey: ""
+apiSecret: ""
+leverage: 10
+differece: 0.005
+settings:
+- symbol: LDO
+  quantity: 1000
+  total: 10
+- symbol: LUNA2
+  quantity: 1000
+  total: 10
+```

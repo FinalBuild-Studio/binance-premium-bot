@@ -46,10 +46,11 @@ type ConfigSetting struct {
 	BidSide    string  `yaml:"bidSide"`
 }
 type Config struct {
-	ApiKey    string          `yaml:"apiKey"`
-	ApiSecret string          `yaml:"apiSecret"`
-	Leverage  int             `json:"leverage"`
-	Settings  []ConfigSetting `yaml:"settings"`
+	ApiKey     string          `yaml:"apiKey"`
+	ApiSecret  string          `yaml:"apiSecret"`
+	Leverage   int             `yaml:"leverage"`
+	Difference float64         `yaml:"difference"`
+	Settings   []ConfigSetting `yaml:"settings"`
 }
 
 func getDepth(
@@ -178,6 +179,10 @@ func main() {
 
 				if setting.Leverage == 0 {
 					setting.Leverage = config.Leverage
+				}
+
+				if setting.Difference == 0 {
+					setting.Difference = config.Difference
 				}
 
 				run(
