@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/parnurzeal/gorequest"
-	"github.com/schollz/progressbar/v3"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
@@ -132,10 +131,11 @@ func main() {
 		progressBarTotal += 1
 	}
 
+	maxProgressBar := progressBarTotal
 	currentProgressBarTotal := 0
 
 	// initialize bar
-	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
+
 	manualReduceMode := *reduce
 	marketPriceDifference := *difference
 	arbitrageAutoMode := *arbitrage
@@ -183,16 +183,14 @@ func main() {
 
 			// create new bar
 			if !fundingRateReverseMode {
-				bar.Reset()
-
 				currentProgressBarTotal = 0
 			}
 
-			if bar.IsFinished() {
+			if currentProgressBarTotal >= maxProgressBar {
 				fundingRateReverseMode = false
 				step = 1
 
-				bar.ChangeMax(progressBarTotal)
+				maxProgressBar = progressBarTotal
 			}
 		}
 
@@ -294,8 +292,8 @@ func main() {
 					break
 				}
 
-				// add bar status
-				bar.Add(1)
+				// update var
+				currentProgressBarTotal += 1
 
 				// handle order
 				// X-MBX-APIKEY
@@ -321,22 +319,17 @@ func main() {
 					// reset quantity
 					quantityPerOrder = *quantity
 
-					fmt.Println()
 					logrus.Info("direction changed, close orders...")
-					bar.Reset()
 
 					// change max
 					if currentProgressBarTotal > progressBarTotal {
-						bar.ChangeMax(progressBarTotal)
+						maxProgressBar = progressBarTotal
 					} else {
-						bar.ChangeMax(currentProgressBarTotal)
+						maxProgressBar = currentProgressBarTotal
 					}
 
 					currentProgressBarTotal = 0
 				}
-
-				// update var
-				currentProgressBarTotal += 1
 
 				binanceOrderBUSD := BinancePlaceOrder{
 					Type:     "MARKET",
@@ -380,6 +373,7 @@ func main() {
 				if totalQuantity > 0 {
 					batchOrders, _ := json.Marshal(orders)
 
+					logrus.Info(string(batchOrders))
 					fapi(
 						"/batchOrders",
 						gorequest.POST,
@@ -409,6 +403,4 @@ func main() {
 
 		time.Sleep(1 * time.Second)
 	}
-
-	fmt.Println()
 }
