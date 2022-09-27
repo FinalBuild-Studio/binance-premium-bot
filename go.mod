@@ -21,5 +21,6 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/thoas/go-funk v0.9.2
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 )

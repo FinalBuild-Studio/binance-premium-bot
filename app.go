@@ -17,7 +17,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"github.com/thoas/go-funk"
+	"golang.org/x/exp/slices"
 
 	binance "github.com/CapsLock-Studio/binance-premium-index/models"
 )
@@ -290,7 +290,7 @@ func main() {
 					busdAskSize > quantityPerOrder,
 				}
 
-				if funk.Contains(rules, false) {
+				if slices.Contains(rules, false) {
 					break
 				}
 
