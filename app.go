@@ -136,7 +136,7 @@ func main() {
 
 	// initialize bar
 	bar := progressbar.NewOptions(progressBarTotal, progressbar.OptionSetWidth(30))
-	manualFundingRateReverseMode := *reduce
+	manualReduceMode := *reduce
 	marketPriceDifference := *difference
 	arbitrageAutoMode := *arbitrage
 
@@ -147,7 +147,7 @@ func main() {
 	var arbitrageTriggered bool
 
 	// force set arbitrage=OFF
-	if manualFundingRateReverseMode {
+	if manualReduceMode {
 		arbitrageAutoMode = false
 	}
 
@@ -165,13 +165,13 @@ func main() {
 	}
 
 	for {
-		if totalQuantity <= 0 && manualFundingRateReverseMode {
+		if totalQuantity <= 0 && manualReduceMode {
 			break
 		}
 
 		// enable arbitrage mode
 		if arbitrageAutoMode && totalQuantity <= 0 {
-			manualFundingRateReverseMode = true
+			manualReduceMode = true
 			totalQuantity = *total
 			arbitrageTriggered = true
 		}
@@ -297,7 +297,7 @@ func main() {
 
 				// handle order
 				// X-MBX-APIKEY
-				if manualFundingRateReverseMode {
+				if manualReduceMode {
 					v.Direction = !v.Direction
 
 					if *bidSide == "BUSD" {
@@ -365,7 +365,7 @@ func main() {
 					}
 				}
 
-				if manualFundingRateReverseMode || fundingRateReverseMode {
+				if manualReduceMode || fundingRateReverseMode {
 					binanceOrderBUSD.ReduceOnly = "true"
 					binanceOrderUSDT.ReduceOnly = "true"
 				}
