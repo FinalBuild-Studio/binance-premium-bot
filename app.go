@@ -156,9 +156,11 @@ func main() {
 
 	if arbitrageAutoMode {
 		logrus.Info("You're in arbitrage mode.")
-		logrus.Info("I'll help you place some orders and use reverse mode when differece +0.08%.")
+		logrus.Info("I'll help you place some orders and use reverse mode when differece +-0.08%.")
+		logrus.Info("Total quantity has been reset.")
 
 		marketPriceDifference = .08
+		totalQuantity = *quantity
 	} else {
 		logrus.Info("I'm trying to place some orders...")
 		logrus.Info("Please be patient and keep waiting...")
