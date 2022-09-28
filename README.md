@@ -65,6 +65,8 @@ Usage of ./binance-premium-bot:
     	quantity per order
   -reduce
     	use reduce mode
+  -serve
+    	serve in http mode
   -symbol string
     	binance future symbol
   -total float
@@ -119,3 +121,31 @@ settings:
   quantity: 1000
   total: 10
 ```
+
+## Serve in http mode
+
+There is another convenient way to run your bot, you can use `-serve` flag to run a simple server expose to port `8080`.
+
+Some magic happend like this
+
+```bash
+./binance-premium-bot -serve
+```
+
+Then, you can use curl to create a hedge bot.
+
+For WAVES as example
+
+```bash
+curl -X POST -H 'Content-Type: application/json' -d '{"symbol": "WAVES", "quantity": 0.0001, "total": 0.0001}' http://localhost:8080
+```
+
+And you'll get an uuid, once you want to stop your bot you just need to call `DELETE` method.
+
+For example, your `POST` api get an uuid `2563fbb8-3492-4eda-b4db-5d1941c10742`, you want remove your bot you have to make a `DELETE` request.
+
+```bash
+curl -X DELETE http://localhost:8080/2563fbb8-3492-4eda-b4db-5d1941c10742
+```
+
+Done!

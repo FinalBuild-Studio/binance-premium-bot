@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/parnurzeal/gorequest"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -34,18 +37,18 @@ type BinancePlaceOrder struct {
 }
 
 type ConfigSetting struct {
-	Symbol     string  `yaml:"symbol"`
-	ApiKey     string  `yaml:"apiKey"`
-	ApiSecret  string  `yaml:"apiSecret"`
-	Quantity   float64 `yaml:"quantity"`
-	Total      float64 `yaml:"total"`
-	Reduce     bool    `yaml:"reduce"`
-	Arbitrage  bool    `yaml:"arbitrage"`
-	Difference float64 `yaml:"difference"`
-	Leverage   int     `yaml:"leverage"`
-	BidSide    string  `yaml:"bidSide"`
-	Monitor    bool    `yaml:"monitor"`
-	Direction  bool    `yaml:"direction"`
+	Symbol     string  `yaml:"symbol" json:"symbol"`
+	ApiKey     string  `yaml:"apiKey" json:"apiKey"`
+	ApiSecret  string  `yaml:"apiSecret" json:"apiSecret"`
+	Quantity   float64 `yaml:"quantity" json:"quantity"`
+	Total      float64 `yaml:"total" json:"total"`
+	Reduce     bool    `yaml:"reduce" json:"reduce"`
+	Arbitrage  bool    `yaml:"arbitrage" json:"arbitrage"`
+	Difference float64 `yaml:"difference" json:"difference"`
+	Leverage   int     `yaml:"leverage" json:"leverage"`
+	BidSide    string  `yaml:"bidSide" json:"bidSide"`
+	Monitor    bool    `yaml:"monitor" json:"monitor"`
+	Direction  bool    `yaml:"direction" json:"direction"`
 }
 
 type Config struct {
@@ -140,6 +143,106 @@ func binanceIndexDirection(index []binance.BinancePremium) bool {
 	return busd > usdt
 }
 
+func httpServer() {
+	ch := make(chan string, 10)
+	route := gin.Default()
+
+	route.POST("/", func(ctx *gin.Context) {
+		var r ConfigSetting
+		if ctx.Bind(&r) != nil {
+			return
+		}
+
+		ID := uuid.New().String()
+
+		go func(r ConfigSetting) {
+			run(
+				r.ApiKey,
+				r.ApiSecret,
+				r.Symbol,
+				r.Quantity,
+				r.Total,
+				r.Reduce,
+				r.Arbitrage,
+				r.Difference,
+				r.Leverage,
+				r.BidSide,
+				r.Monitor,
+				r.Direction,
+				ch,
+				&ID,
+			)
+		}(r)
+
+		ctx.Data(http.StatusOK, "text/plain", []byte(ID))
+	})
+
+	route.DELETE("/:id", func(ctx *gin.Context) {
+		ID := ctx.Param("id")
+
+		ch <- ID
+		ctx.Data(http.StatusOK, "text/plain", []byte("DONE"))
+	})
+
+	route.Run()
+}
+
+func readConfig(path string) {
+	filename, _ := filepath.Abs(path)
+	file, err := ioutil.ReadFile(filename)
+
+	if err != nil {
+		panic(err)
+	}
+
+	config := Config{}
+	yaml.Unmarshal(file, &config)
+
+	wg := &sync.WaitGroup{}
+
+	for _, setting := range config.Settings {
+		wg.Add(1)
+
+		go func(setting ConfigSetting) {
+			defer wg.Done()
+			if setting.ApiKey == "" {
+				setting.ApiKey = config.ApiKey
+			}
+
+			if setting.ApiSecret == "" {
+				setting.ApiSecret = config.ApiSecret
+			}
+
+			if setting.Leverage == 0 {
+				setting.Leverage = config.Leverage
+			}
+
+			if setting.Difference == 0 {
+				setting.Difference = config.Difference
+			}
+
+			run(
+				setting.ApiKey,
+				setting.ApiSecret,
+				setting.Symbol,
+				setting.Quantity,
+				setting.Total,
+				setting.Reduce,
+				setting.Arbitrage,
+				setting.Difference,
+				setting.Leverage,
+				setting.BidSide,
+				setting.Monitor,
+				setting.Direction,
+				nil,
+				nil,
+			)
+		}(setting)
+	}
+
+	wg.Wait()
+}
+
 func main() {
 	apiKey := flag.String("apiKey", "", "binance api key")
 	apiSecret := flag.String("apiSecret", "", "binance api secret")
@@ -154,60 +257,13 @@ func main() {
 	config := flag.String("config", "", "yaml config for multi-assets")
 	monitor := flag.Bool("monitor", false, "assume you have positions on binance")
 	direction := flag.Bool("direction", false, "tell bot your current direction(monitor mode only)")
+	serve := flag.Bool("serve", false, "serve in http mode")
 	flag.Parse()
 
-	if *config != "" {
-		filename, _ := filepath.Abs(*config)
-		file, err := ioutil.ReadFile(filename)
-
-		if err != nil {
-			panic(err)
-		}
-
-		config := Config{}
-		yaml.Unmarshal(file, &config)
-
-		wg := &sync.WaitGroup{}
-
-		for _, setting := range config.Settings {
-			wg.Add(1)
-
-			go func(setting ConfigSetting) {
-				defer wg.Done()
-				if setting.ApiKey == "" {
-					setting.ApiKey = config.ApiKey
-				}
-
-				if setting.ApiSecret == "" {
-					setting.ApiSecret = config.ApiSecret
-				}
-
-				if setting.Leverage == 0 {
-					setting.Leverage = config.Leverage
-				}
-
-				if setting.Difference == 0 {
-					setting.Difference = config.Difference
-				}
-
-				run(
-					setting.ApiKey,
-					setting.ApiSecret,
-					setting.Symbol,
-					setting.Quantity,
-					setting.Total,
-					setting.Reduce,
-					setting.Arbitrage,
-					setting.Difference,
-					setting.Leverage,
-					setting.BidSide,
-					setting.Monitor,
-					setting.Direction,
-				)
-			}(setting)
-		}
-
-		wg.Wait()
+	if *serve {
+		httpServer()
+	} else if *config != "" {
+		readConfig(*config)
 	} else {
 		run(
 			*apiKey,
@@ -222,6 +278,8 @@ func main() {
 			*bidSide,
 			*monitor,
 			*direction,
+			nil,
+			nil,
 		)
 	}
 }
@@ -239,6 +297,8 @@ func run(
 	bidSide string,
 	monitor,
 	direction bool,
+	ch chan string,
+	ID *string,
 ) {
 	logger := logrus.New().WithField("symbol", symbol)
 	currentProgressBarTotal := 0
@@ -285,6 +345,17 @@ func run(
 	}
 
 	for {
+		if ch != nil && len(ch) > 0 {
+			buffered := <-ch
+
+			if buffered == *ID {
+				logger.Info("Receive close signal...")
+				break
+			}
+
+			ch <- buffered
+		}
+
 		if totalQuantity <= 0 && reduce && !arbitrage {
 			break
 		}

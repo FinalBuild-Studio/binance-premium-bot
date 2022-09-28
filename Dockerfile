@@ -13,4 +13,6 @@ FROM scratch
 
 COPY --from=build /app/run run
 
+EXPOSE 8080
+
 ENTRYPOINT ["./run"]
