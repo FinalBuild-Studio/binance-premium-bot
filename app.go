@@ -59,6 +59,12 @@ type Config struct {
 	Settings   []ConfigSetting `yaml:"settings"`
 }
 
+type BinanceOrder struct {
+	Symbol  string `json:"symbol"`
+	Side    string `json:"side"`
+	OrigQty string `json:"origQty"`
+}
+
 func getDepth(
 	symbol string,
 	currency string,
@@ -102,11 +108,11 @@ func fapi(
 	if body != nil {
 		params := url.Values{}
 
-		params.Add("timestamp", decimal.NewFromInt(time.Now().UnixMilli()).String())
-
 		for key, value := range body {
 			params.Add(key, value)
 		}
+
+		params.Add("timestamp", decimal.NewFromInt(time.Now().UnixMilli()).String())
 
 		mac := hmac.New(sha256.New, []byte(apiSecret))
 		mac.Write([]byte(params.Encode()))
@@ -115,6 +121,7 @@ func fapi(
 		params.Add("signature", signingKey)
 
 		path += "?" + params.Encode()
+		fmt.Println(path)
 	}
 
 	req := gorequest.
@@ -322,9 +329,55 @@ func run(
 	if reduce {
 		arbitrage = false
 	} else if monitor {
-		currentDirection = &direction
-		currentProgressBarTotal = maxProgressBar
-		totalQuantity = 0
+		openPositionForUSDT := make([]BinanceOrder, 0)
+		openPositionForBUSD := make([]BinanceOrder, 0)
+		wg := &sync.WaitGroup{}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fapi(
+				"/openOrders",
+				gorequest.GET,
+				apiKey,
+				apiSecret,
+				map[string]string{
+					"symbol":     symbol + "USDT",
+					"recvWindow": "5000",
+				},
+			).EndStruct(&openPositionForUSDT)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fapi(
+				"/openOrders",
+				gorequest.GET,
+				apiKey,
+				apiSecret,
+				map[string]string{
+					"symbol":     symbol + "BUSD",
+					"recvWindow": "5000",
+				},
+			).EndStruct(&openPositionForBUSD)
+		}()
+
+		wg.Wait()
+
+		if len(openPositionForBUSD) > 0 && len(openPositionForUSDT) > 0 {
+			openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].OrigQty)
+			openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].OrigQty)
+
+			openQty, _ := decimal.Min(openQtyForBUSD, openQtyForUSDT).Float64()
+
+			currentDirection = &direction
+			currentProgressBarTotal = maxProgressBar
+			totalQuantity, _ = decimal.
+				NewFromFloat(totalQuantity).
+				Sub(decimal.NewFromFloat(openQty)).
+				Float64()
+		}
 	}
 
 	// initialize step
