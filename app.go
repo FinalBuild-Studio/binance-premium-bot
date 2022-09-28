@@ -383,7 +383,7 @@ func run(
 			direction := openPositionForBUSD[0].PositionSide == "LONG"
 
 			currentDirection = &direction
-			currentProgressBarTotal = int(totalQuantity / quantityPerOrder)
+			currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
 			totalQuantity, _ = decimal.
 				NewFromFloat(totalQuantity).
 				Sub(decimal.NewFromFloat(openQty)).
