@@ -32,7 +32,7 @@ const (
 	BINANCE_FAPI_LEVERAGE     string = "/leverage"
 	BINANCE_FAPI_BATCH_ORDERS string = "/batchOrders"
 	BINANCE_FAPI_DEPTH        string = "/depth"
-	BINANCE_FAPI_OPEN_ORDERS  string = "/openOrders"
+	BINANCE_FAPI_OPEN_ORDERS  string = "/positionRisk"
 
 	FUNDING_RATE_ENDPOINT string = "https://wiwisorich.capslock.tw"
 )
@@ -69,9 +69,9 @@ type Config struct {
 }
 
 type BinanceOrder struct {
-	Symbol  string `json:"symbol"`
-	Side    string `json:"side"`
-	OrigQty string `json:"origQty"`
+	Symbol       string `json:"symbol"`
+	PositionSide string `json:"positionSide"`
+	PositionAmt  string `json:"positionAmt"`
 }
 
 func getDepth(
@@ -295,6 +295,16 @@ func main() {
 	}
 }
 
+func getMaxProgressBar(totalQuantity, quantityPerOrder float64) int {
+	progressBarTotal := int(totalQuantity / quantityPerOrder)
+
+	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
+		progressBarTotal += 1
+	}
+
+	return progressBarTotal
+}
+
 func run(
 	apiKey,
 	apiSecret,
@@ -314,11 +324,7 @@ func run(
 	currentProgressBarTotal := 0
 	totalQuantity := total
 	quantityPerOrder := quantity
-	progressBarTotal := int(totalQuantity / quantityPerOrder)
-
-	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
-		progressBarTotal += 1
-	}
+	progressBarTotal := getMaxProgressBar(totalQuantity, quantityPerOrder)
 
 	maxProgressBar := progressBarTotal
 
@@ -369,15 +375,15 @@ func run(
 		wg.Wait()
 
 		if len(openPositionForBUSD) > 0 && len(openPositionForUSDT) > 0 {
-			openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].OrigQty)
-			openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].OrigQty)
+			openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].PositionAmt)
+			openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].PositionAmt)
 
 			openQty, _ := decimal.Min(openQtyForBUSD, openQtyForUSDT).Float64()
 
-			direction := openPositionForBUSD[0].Side == "BUY"
+			direction := openPositionForBUSD[0].PositionSide == "LONG"
 
 			currentDirection = &direction
-			currentProgressBarTotal = maxProgressBar
+			currentProgressBarTotal = int(totalQuantity / quantityPerOrder)
 			totalQuantity, _ = decimal.
 				NewFromFloat(totalQuantity).
 				Sub(decimal.NewFromFloat(openQty)).
