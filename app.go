@@ -27,6 +27,16 @@ import (
 	binance "github.com/CapsLock-Studio/binance-premium-index/models"
 )
 
+const (
+	BINANCE_FAPI_ENDPOINT     string = "https://fapi.binance.com/fapi/v1"
+	BINANCE_FAPI_LEVERAGE     string = "/leverge"
+	BINANCE_FAPI_BATCH_ORDERS string = "/batchOrders"
+	BINANCE_FAPI_DEPTH        string = "/depth"
+	BINANCE_FAPI_OPEN_ORDERS  string = "/openOrders"
+
+	FUNDING_RATE_ENDPOINT string = "https://wiwisorich.capslock.tw"
+)
+
 // {"type":"MARKET","symbol":"BTCUSDT","side":"BUY","quantity":"0.001"}
 type BinancePlaceOrder struct {
 	Type       string `json:"type"`
@@ -48,7 +58,6 @@ type ConfigSetting struct {
 	Leverage   int     `yaml:"leverage" json:"leverage"`
 	BidSide    string  `yaml:"bidSide" json:"bidSide"`
 	Monitor    bool    `yaml:"monitor" json:"monitor"`
-	Direction  bool    `yaml:"direction" json:"direction"`
 }
 
 type Config struct {
@@ -80,7 +89,7 @@ func getDepth(
 	}{}
 
 	fapi(
-		"/depth",
+		BINANCE_FAPI_DEPTH,
 		gorequest.GET,
 		"",
 		"",
@@ -126,7 +135,7 @@ func fapi(
 
 	req := gorequest.
 		New().
-		CustomMethod(method, "https://fapi.binance.com/fapi/v1"+path)
+		CustomMethod(method, BINANCE_FAPI_ENDPOINT+path)
 
 	req.Header.Set("X-MBX-APIKEY", apiKey)
 
@@ -175,7 +184,6 @@ func httpServer() {
 				r.Leverage,
 				r.BidSide,
 				r.Monitor,
-				r.Direction,
 				ch,
 				&ID,
 			)
@@ -240,7 +248,6 @@ func readConfig(path string) {
 				setting.Leverage,
 				setting.BidSide,
 				setting.Monitor,
-				setting.Direction,
 				nil,
 				nil,
 			)
@@ -263,7 +270,6 @@ func main() {
 	bidSide := flag.String("bidSide", "", "determine bid side in reduce mode")
 	config := flag.String("config", "", "yaml config for multi-assets")
 	monitor := flag.Bool("monitor", false, "assume you have positions on binance")
-	direction := flag.Bool("direction", false, "tell bot your current direction(monitor mode only)")
 	serve := flag.Bool("serve", false, "serve in http mode")
 	flag.Parse()
 
@@ -284,7 +290,6 @@ func main() {
 			*leverage,
 			*bidSide,
 			*monitor,
-			*direction,
 			nil,
 			nil,
 		)
@@ -302,8 +307,7 @@ func run(
 	difference float64,
 	leverage int,
 	bidSide string,
-	monitor,
-	direction bool,
+	monitor bool,
 	ch chan string,
 	ID *string,
 ) {
@@ -337,7 +341,7 @@ func run(
 		go func() {
 			defer wg.Done()
 			fapi(
-				"/openOrders",
+				BINANCE_FAPI_OPEN_ORDERS,
 				gorequest.GET,
 				apiKey,
 				apiSecret,
@@ -352,7 +356,7 @@ func run(
 		go func() {
 			defer wg.Done()
 			fapi(
-				"/openOrders",
+				BINANCE_FAPI_OPEN_ORDERS,
 				gorequest.GET,
 				apiKey,
 				apiSecret,
@@ -370,6 +374,8 @@ func run(
 			openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].OrigQty)
 
 			openQty, _ := decimal.Min(openQtyForBUSD, openQtyForUSDT).Float64()
+
+			direction := openPositionForBUSD[0].Side == "BUY"
 
 			currentDirection = &direction
 			currentProgressBarTotal = maxProgressBar
@@ -448,7 +454,7 @@ func run(
 		// fetch hedge information
 		gorequest.
 			New().
-			Get("https://wiwisorich.capslock.tw").
+			Get(FUNDING_RATE_ENDPOINT).
 			EndStruct(&hedge)
 
 		for _, v := range hedge {
@@ -504,7 +510,7 @@ func run(
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "USDT"
-					fapi("/leverage", gorequest.POST, apiKey, apiSecret, useLeverage).End()
+					fapi(BINANCE_FAPI_LEVERAGE, gorequest.POST, apiKey, apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
@@ -512,7 +518,7 @@ func run(
 					defer wg.Done()
 
 					useLeverage["symbol"] = v.Symbol + "BUSD"
-					fapi("/leverage", gorequest.POST, apiKey, apiSecret, useLeverage).End()
+					fapi(BINANCE_FAPI_LEVERAGE, gorequest.POST, apiKey, apiSecret, useLeverage).End()
 				}()
 
 				wg.Add(1)
@@ -630,7 +636,7 @@ func run(
 
 					logger.Info(string(batchOrders))
 					fapi(
-						"/batchOrders",
+						BINANCE_FAPI_BATCH_ORDERS,
 						gorequest.POST,
 						apiKey,
 						apiSecret,
