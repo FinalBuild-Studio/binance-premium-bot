@@ -29,7 +29,7 @@ import (
 
 const (
 	BINANCE_FAPI_ENDPOINT     string = "https://fapi.binance.com/fapi/v1"
-	BINANCE_FAPI_LEVERAGE     string = "/leverge"
+	BINANCE_FAPI_LEVERAGE     string = "/leverage"
 	BINANCE_FAPI_BATCH_ORDERS string = "/batchOrders"
 	BINANCE_FAPI_DEPTH        string = "/depth"
 	BINANCE_FAPI_OPEN_ORDERS  string = "/openOrders"
@@ -404,6 +404,7 @@ func run(
 
 	for {
 		if ch != nil && len(ch) > 0 {
+			logrus.Info("Check channel...")
 			buffered := <-ch
 
 			if buffered == *ID {
@@ -411,6 +412,7 @@ func run(
 				break
 			}
 
+			logger.Info("Send to channel again")
 			ch <- buffered
 		}
 
