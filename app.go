@@ -72,6 +72,7 @@ type BinanceOrder struct {
 	Symbol       string `json:"symbol"`
 	PositionSide string `json:"positionSide"`
 	PositionAmt  string `json:"positionAmt"`
+	Notional     string `json:"notional"`
 }
 
 func getDepth(
@@ -380,7 +381,8 @@ func run(
 
 			openQty, _ := decimal.Min(openQtyForBUSD, openQtyForUSDT).Float64()
 
-			direction := openPositionForBUSD[0].PositionSide == "LONG"
+			notional, _ := strconv.ParseFloat(openPositionForBUSD[0].Notional, 64)
+			direction := notional > 0
 
 			currentDirection = &direction
 			currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
