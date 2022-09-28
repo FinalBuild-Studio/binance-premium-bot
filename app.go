@@ -492,7 +492,6 @@ func run(
 				currentProgressBarTotal += 1
 
 				// handle order
-				// X-MBX-APIKEY
 				if reduce {
 					v.Direction = !v.Direction
 
@@ -527,15 +526,17 @@ func run(
 					currentProgressBarTotal = 0
 				}
 
+				perQuantity := decimal.NewFromFloat(quantityPerOrder).String()
+
 				binanceOrderBUSD := BinancePlaceOrder{
 					Type:     "MARKET",
 					Symbol:   v.Symbol + "BUSD",
-					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
+					Quantity: perQuantity,
 				}
 				binanceOrderUSDT := BinancePlaceOrder{
 					Type:     "MARKET",
 					Symbol:   v.Symbol + "USDT",
-					Quantity: decimal.NewFromFloat(quantityPerOrder).String(),
+					Quantity: perQuantity,
 				}
 
 				logger.Info("USDT BID=", usdtBid)
