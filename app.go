@@ -45,6 +45,7 @@ type ConfigSetting struct {
 	Leverage   int     `yaml:"leverage"`
 	BidSide    string  `yaml:"bidSide"`
 }
+
 type Config struct {
 	ApiKey     string          `yaml:"apiKey"`
 	ApiSecret  string          `yaml:"apiSecret"`
@@ -276,14 +277,8 @@ func run(
 	}
 
 	for {
-		if totalQuantity <= 0 && manualReduceMode {
-			if arbitrageAutoMode {
-				manualReduceMode = false
-				totalQuantity = total
-				arbitrageTriggered = false
-			} else {
-				break
-			}
+		if totalQuantity <= 0 && manualReduceMode && !arbitrageAutoMode {
+			break
 		}
 
 		// enable arbitrage mode
