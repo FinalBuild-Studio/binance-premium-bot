@@ -99,10 +99,12 @@ func getDepth(
 		},
 	).EndStruct(&bidAndAsk)
 
-	bid, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][0], 64)
-	ask, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][0], 64)
-	bidSize, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][1], 64)
-	askSize, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][1], 64)
+	if len(bidAndAsk.Bids) > 0 && len(bidAndAsk.Asks) > 0 {
+		bid, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][0], 64)
+		ask, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][0], 64)
+		bidSize, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][1], 64)
+		askSize, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][1], 64)
+	}
 
 	return
 }
