@@ -55,8 +55,12 @@ Usage of ./binance-premium-bot:
     	yaml config for multi-assets
   -difference float
     	BUSD & USDT difference (default 0.05)
+  -direction
+    	tell bot your current direction(monitor mode only)
   -leverage int
     	futures leverage (default 10)
+  -monitor
+    	assume you have positions on binance
   -quantity float
     	quantity per order
   -reduce

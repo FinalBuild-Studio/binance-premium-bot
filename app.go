@@ -44,6 +44,8 @@ type ConfigSetting struct {
 	Difference float64 `yaml:"difference"`
 	Leverage   int     `yaml:"leverage"`
 	BidSide    string  `yaml:"bidSide"`
+	Monitor    bool    `yaml:"monitor"`
+	Direction  bool    `yaml:"direction"`
 }
 
 type Config struct {
@@ -150,6 +152,8 @@ func main() {
 	leverage := flag.Int("leverage", 10, "futures leverage")
 	bidSide := flag.String("bidSide", "", "determine bid side in reduce mode")
 	config := flag.String("config", "", "yaml config for multi-assets")
+	monitor := flag.Bool("monitor", false, "assume you have positions on binance")
+	direction := flag.Bool("direction", false, "tell bot your current direction(monitor mode only)")
 	flag.Parse()
 
 	if *config != "" {
@@ -197,6 +201,8 @@ func main() {
 					setting.Difference,
 					setting.Leverage,
 					setting.BidSide,
+					setting.Monitor,
+					setting.Direction,
 				)
 			}(setting)
 		}
@@ -214,6 +220,8 @@ func main() {
 			*difference,
 			*leverage,
 			*bidSide,
+			*monitor,
+			*direction,
 		)
 	}
 }
@@ -229,6 +237,8 @@ func run(
 	difference float64,
 	leverage int,
 	bidSide string,
+	monitor,
+	direction bool,
 ) {
 	logger := logrus.New().WithField("symbol", symbol)
 	currentProgressBarTotal := 0
@@ -243,7 +253,7 @@ func run(
 	maxProgressBar := progressBarTotal
 
 	// initialize flag
-	var direction *bool
+	var currentDirection *bool
 	var fundingRateReverseMode bool
 	var arbitrageDirection *bool
 	var arbitrageTriggered bool
@@ -251,6 +261,10 @@ func run(
 	// force set arbitrage=OFF
 	if reduce {
 		arbitrage = false
+	} else if monitor {
+		currentDirection = &direction
+		currentProgressBarTotal = maxProgressBar
+		totalQuantity = 0
 	}
 
 	// initialize step
@@ -307,8 +321,11 @@ func run(
 
 		hedge := make([]binance.BinanceHedge, 0)
 
-		req := gorequest.New().Get("https://wiwisorich.capslock.tw")
-		req.EndStruct(&hedge)
+		// fetch hedge information
+		gorequest.
+			New().
+			Get("https://wiwisorich.capslock.tw").
+			EndStruct(&hedge)
 
 		for _, v := range hedge {
 			if v.Symbol == symbol {
@@ -326,6 +343,10 @@ func run(
 					break
 				}
 
+				if currentDirection != nil && v.Direction != *currentDirection {
+					fundingRateReverseMode = true
+				}
+
 				// record arbitrage direction
 				if arbitrage {
 					if arbitrageDirection == nil {
@@ -337,10 +358,6 @@ func run(
 					}
 
 					v.Direction = *arbitrageDirection
-				}
-
-				if fundingRateReverseMode {
-					v.Direction = !v.Direction
 				}
 
 				var usdtBid float64
@@ -413,16 +430,16 @@ func run(
 					} else if bidSide == "USDT" {
 						v.Direction = true
 					}
-				} else if direction == nil {
-					direction = &v.Direction
-				} else if *direction != v.Direction {
+				} else if currentDirection == nil {
+					currentDirection = &v.Direction
+				} else if *currentDirection != v.Direction {
 					if totalQuantity >= total {
 						step = 1
 					} else {
 						step = -1
 					}
 
-					direction = &v.Direction
+					currentDirection = &v.Direction
 
 					// reset quantity
 					quantityPerOrder = quantity
