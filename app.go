@@ -21,6 +21,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/ratelimit"
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
@@ -160,7 +161,7 @@ func binanceIndexDirection(index []binance.BinancePremium) bool {
 	return busd > usdt
 }
 
-func httpServer() {
+func httpServer(rl ratelimit.Limiter) {
 	ch := make(chan string, 10)
 	route := gin.Default()
 
@@ -187,6 +188,7 @@ func httpServer() {
 				r.Monitor,
 				ch,
 				&ID,
+				rl,
 			)
 		}(r)
 
@@ -203,7 +205,7 @@ func httpServer() {
 	route.Run()
 }
 
-func readConfig(path string) {
+func readConfig(path string, rl ratelimit.Limiter) {
 	filename, _ := filepath.Abs(path)
 	file, err := ioutil.ReadFile(filename)
 
@@ -251,6 +253,7 @@ func readConfig(path string) {
 				setting.Monitor,
 				nil,
 				nil,
+				rl,
 			)
 		}(setting)
 	}
@@ -274,10 +277,12 @@ func main() {
 	serve := flag.Bool("serve", false, "serve in http mode")
 	flag.Parse()
 
+	rl := ratelimit.New(1)
+
 	if *serve {
-		httpServer()
+		httpServer(rl)
 	} else if *config != "" {
-		readConfig(*config)
+		readConfig(*config, rl)
 	} else {
 		run(
 			*apiKey,
@@ -293,6 +298,7 @@ func main() {
 			*monitor,
 			nil,
 			nil,
+			rl,
 		)
 	}
 }
@@ -321,6 +327,7 @@ func run(
 	monitor bool,
 	ch chan string,
 	ID *string,
+	rl ratelimit.Limiter,
 ) {
 	logger := logrus.New().WithField("symbol", symbol)
 	currentProgressBarTotal := 0
@@ -416,6 +423,9 @@ func run(
 	}
 
 	for {
+		// wait 1 seconds
+		rl.Take()
+
 		if ch != nil && len(ch) > 0 {
 			logrus.Info("Check channel...")
 			buffered := <-ch
