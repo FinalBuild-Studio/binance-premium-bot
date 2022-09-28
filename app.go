@@ -231,6 +231,7 @@ func run(
 	bidSide string,
 ) {
 	logger := logrus.New().WithField("symbol", symbol)
+	currentProgressBarTotal := 0
 	totalQuantity := total
 	quantityPerOrder := quantity
 	progressBarTotal := int(totalQuantity / quantityPerOrder)
@@ -240,13 +241,6 @@ func run(
 	}
 
 	maxProgressBar := progressBarTotal
-	currentProgressBarTotal := 0
-
-	// initialize bar
-
-	manualReduceMode := reduce
-	marketPriceDifference := difference
-	arbitrageAutoMode := arbitrage
 
 	// initialize flag
 	var direction *bool
@@ -255,21 +249,21 @@ func run(
 	var arbitrageTriggered bool
 
 	// force set arbitrage=OFF
-	if manualReduceMode {
-		arbitrageAutoMode = false
+	if reduce {
+		arbitrage = false
 	}
 
 	// initialize step
 	step := 1
 
-	if arbitrageAutoMode {
+	if arbitrage {
 		logger.Info("You're in arbitrage mode.")
 		logger.Info("I'll help you place some orders.")
 		logger.Info("Use reverse mode when differece +-0.08%.")
 		logger.Info("Total quantity has been reset.")
 
 		total = quantity
-		marketPriceDifference = .08
+		difference = .08
 		totalQuantity = total
 	} else {
 		logger.Info("I'm trying to place some orders...")
@@ -277,13 +271,13 @@ func run(
 	}
 
 	for {
-		if totalQuantity <= 0 && manualReduceMode && !arbitrageAutoMode {
+		if totalQuantity <= 0 && reduce && !arbitrage {
 			break
 		}
 
 		// enable arbitrage mode
-		if arbitrageAutoMode && totalQuantity <= 0 {
-			manualReduceMode = true
+		if arbitrage && totalQuantity <= 0 {
+			reduce = true
 			totalQuantity = total
 			arbitrageTriggered = true
 		}
@@ -320,11 +314,11 @@ func run(
 			if v.Symbol == symbol {
 				markPriceDirection := binanceIndexDirection(v.Index)
 
-				if arbitrageAutoMode && marketPriceDifference > v.MarkPriceGap {
+				if arbitrage && difference > v.MarkPriceGap {
 					break
 				}
 
-				if !arbitrageAutoMode && v.MarkPriceGap > marketPriceDifference {
+				if !arbitrage && v.MarkPriceGap > difference {
 					break
 				}
 
@@ -333,7 +327,7 @@ func run(
 				}
 
 				// record arbitrage direction
-				if arbitrageAutoMode {
+				if arbitrage {
 					if arbitrageDirection == nil {
 						if markPriceDirection == v.Direction {
 							break
@@ -411,7 +405,7 @@ func run(
 
 				// handle order
 				// X-MBX-APIKEY
-				if manualReduceMode {
+				if reduce {
 					v.Direction = !v.Direction
 
 					if bidSide == "BUSD" {
@@ -479,7 +473,7 @@ func run(
 					}
 				}
 
-				if manualReduceMode || fundingRateReverseMode {
+				if reduce || fundingRateReverseMode {
 					binanceOrderBUSD.ReduceOnly = "true"
 					binanceOrderUSDT.ReduceOnly = "true"
 				}
