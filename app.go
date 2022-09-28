@@ -130,7 +130,6 @@ func fapi(
 		params.Add("signature", signingKey)
 
 		path += "?" + params.Encode()
-		fmt.Println(path)
 	}
 
 	req := gorequest.
@@ -461,6 +460,8 @@ func run(
 			if v.Symbol == symbol {
 				markPriceDirection := binanceIndexDirection(v.Index)
 
+				logger.Info("MarkPriceGap=", v.MarkPriceGap)
+
 				if arbitrage && difference > v.MarkPriceGap {
 					break
 				}
@@ -598,11 +599,6 @@ func run(
 					Quantity: perQuantity,
 				}
 
-				logger.Info("USDT BID=", usdtBid)
-				logger.Info("USDT ASK=", usdtAsk)
-				logger.Info("BUSD BID=", busdBid)
-				logger.Info("BUSD ASK=", busdAsk)
-
 				if arbitrageDirection == nil {
 					if v.Direction {
 						binanceOrderBUSD.Side = "BUY"
@@ -632,6 +628,11 @@ func run(
 
 				// place binance order
 				if totalQuantity > 0 {
+					logger.Info("USDT BID=", usdtBid)
+					logger.Info("USDT ASK=", usdtAsk)
+					logger.Info("BUSD BID=", busdBid)
+					logger.Info("BUSD ASK=", busdAsk)
+
 					batchOrders, _ := json.Marshal(orders)
 
 					logger.Info(string(batchOrders))
