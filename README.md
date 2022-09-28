@@ -140,7 +140,7 @@ For WAVES as example
 curl -X POST -H 'Content-Type: application/json' -d '{"symbol": "WAVES", "quantity": 0.0001, "total": 0.0001}' http://localhost:8080
 ```
 
-And you'll get an uuid, once you want to stop your bot you just need to call `DELETE` method.
+And you'll get an uuid, once you want to stop your bot, you just need to call `DELETE` method.
 
 For example, your `POST` api get an uuid `2563fbb8-3492-4eda-b4db-5d1941c10742`, you want remove your bot you have to make a `DELETE` request.
 
