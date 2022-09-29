@@ -329,7 +329,11 @@ func run(
 	ID *string,
 	rl ratelimit.Limiter,
 ) {
-	logger := logrus.New().WithField("symbol", symbol)
+	logger := logrus.
+		New().
+		WithField("symbol", symbol).
+		WithField("key", apiKey[0:5]).
+		WithField("leverage", leverage)
 	currentProgressBarTotal := 0
 	totalQuantity := total
 	quantityPerOrder := quantity
