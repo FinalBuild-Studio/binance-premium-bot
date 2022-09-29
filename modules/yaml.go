@@ -56,7 +56,7 @@ func (y *Yaml) Read() {
 				setting.Difference = config.Difference
 			}
 
-			NewCore(setting, nil, nil, y.RateLimiter).Run()
+			NewCore(&setting, nil, nil, y.RateLimiter).Run()
 		}(setting)
 	}
 

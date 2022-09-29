@@ -33,35 +33,15 @@ const (
 )
 
 type Core struct {
-	ApiKey      string
-	ApiSecret   string
-	Symbol      string
-	Quantity    float64
-	Total       float64
-	Reduce      bool
-	Arbitrage   bool
-	Difference  float64
-	Leverage    int
-	BidSide     string
-	Monitor     bool
+	Setting     *models.ConfigSetting
 	Channel     chan string
 	ID          *string
 	RateLimiter ratelimit.Limiter
 }
 
-func NewCore(setting models.ConfigSetting, channel chan string, ID *string, rl ratelimit.Limiter) *Core {
+func NewCore(setting *models.ConfigSetting, channel chan string, ID *string, rl ratelimit.Limiter) *Core {
 	return &Core{
-		ApiKey:      setting.ApiKey,
-		ApiSecret:   setting.ApiSecret,
-		Symbol:      setting.Symbol,
-		Quantity:    setting.Quantity,
-		Total:       setting.Total,
-		Reduce:      setting.Reduce,
-		Arbitrage:   setting.Arbitrage,
-		Difference:  setting.Difference,
-		Leverage:    setting.Leverage,
-		BidSide:     setting.BidSide,
-		Monitor:     setting.Monitor,
+		Setting:     setting,
 		Channel:     channel,
 		ID:          ID,
 		RateLimiter: rl,
@@ -86,7 +66,7 @@ func (c *Core) GetDepth(
 		gorequest.GET,
 		map[string]string{
 			"limit":  "5",
-			"symbol": c.Symbol + currency,
+			"symbol": c.Setting.Symbol + currency,
 		},
 	).EndStruct(&bidAndAsk)
 
@@ -114,7 +94,7 @@ func (c *Core) MakeRequest(
 
 		params.Add("timestamp", decimal.NewFromInt(time.Now().UnixMilli()).String())
 
-		mac := hmac.New(sha256.New, []byte(c.ApiSecret))
+		mac := hmac.New(sha256.New, []byte(c.Setting.ApiSecret))
 		mac.Write([]byte(params.Encode()))
 		signingKey := fmt.Sprintf("%x", mac.Sum(nil))
 
@@ -127,7 +107,7 @@ func (c *Core) MakeRequest(
 		New().
 		CustomMethod(method, BINANCE_FAPI_ENDPOINT+path)
 
-	req.Header.Set("X-MBX-APIKEY", c.ApiKey)
+	req.Header.Set("X-MBX-APIKEY", c.Setting.ApiKey)
 
 	return req
 }
@@ -135,17 +115,17 @@ func (c *Core) MakeRequest(
 func (c *Core) Run() {
 	logger := logrus.
 		New().
-		WithField("symbol", c.Symbol).
-		WithField("leverage", c.Leverage)
+		WithField("symbol", c.Setting.Symbol).
+		WithField("leverage", c.Setting.Leverage)
 
 	// add key information
-	if len(c.ApiKey) > 5 {
-		logger = logger.WithField("key", c.ApiKey[0:5])
+	if len(c.Setting.ApiKey) > 5 {
+		logger = logger.WithField("key", c.Setting.ApiKey[0:5])
 	}
 
 	currentProgressBarTotal := 0
-	totalQuantity := c.Total
-	quantityPerOrder := c.Quantity
+	totalQuantity := c.Setting.Total
+	quantityPerOrder := c.Setting.Quantity
 	progressBarTotal := getMaxProgressBar(totalQuantity, quantityPerOrder)
 
 	maxProgressBar := progressBarTotal
@@ -157,9 +137,9 @@ func (c *Core) Run() {
 	var arbitrageTriggered bool
 
 	// force set arbitrage=OFF
-	if c.Reduce {
-		c.Arbitrage = false
-	} else if c.Monitor {
+	if c.Setting.Reduce {
+		c.Setting.Arbitrage = false
+	} else if c.Setting.Monitor {
 		openPositionForUSDT := make([]models.BinanceOrder, 0)
 		openPositionForBUSD := make([]models.BinanceOrder, 0)
 		wg := &sync.WaitGroup{}
@@ -171,7 +151,7 @@ func (c *Core) Run() {
 				BINANCE_FAPI_OPEN_ORDERS,
 				gorequest.GET,
 				map[string]string{
-					"symbol":     c.Symbol + "USDT",
+					"symbol":     c.Setting.Symbol + "USDT",
 					"recvWindow": "5000",
 				},
 			).EndStruct(&openPositionForUSDT)
@@ -184,7 +164,7 @@ func (c *Core) Run() {
 				BINANCE_FAPI_OPEN_ORDERS,
 				gorequest.GET,
 				map[string]string{
-					"symbol":     c.Symbol + "BUSD",
+					"symbol":     c.Setting.Symbol + "BUSD",
 					"recvWindow": "5000",
 				},
 			).EndStruct(&openPositionForBUSD)
@@ -219,15 +199,15 @@ func (c *Core) Run() {
 	// initialize step
 	step := 1
 
-	if c.Arbitrage {
+	if c.Setting.Arbitrage {
 		logger.Info("You're in arbitrage mode.")
 		logger.Info("I'll help you place some orders.")
 		logger.Info("Use reverse mode when differece +-0.08%.")
 		logger.Info("Total quantity has been reset.")
 
-		c.Total = c.Quantity
-		c.Difference = .08
-		totalQuantity = c.Total
+		c.Setting.Total = c.Setting.Quantity
+		c.Setting.Difference = .08
+		totalQuantity = c.Setting.Total
 	} else {
 		logger.Info("I'm trying to place some orders...")
 		logger.Info("Please be patient and keep waiting...")
@@ -250,19 +230,19 @@ func (c *Core) Run() {
 			c.Channel <- buffered
 		}
 
-		if totalQuantity <= 0 && c.Reduce && !c.Arbitrage {
+		if totalQuantity <= 0 && c.Setting.Reduce && !c.Setting.Arbitrage {
 			break
 		}
 
 		// enable arbitrage mode
-		if c.Arbitrage && totalQuantity <= 0 {
-			c.Reduce = true
-			totalQuantity = c.Total
+		if c.Setting.Arbitrage && totalQuantity <= 0 {
+			c.Setting.Reduce = true
+			totalQuantity = c.Setting.Total
 			arbitrageTriggered = true
 		}
 
-		if totalQuantity >= c.Total {
-			totalQuantity = c.Total
+		if totalQuantity >= c.Setting.Total {
+			totalQuantity = c.Setting.Total
 
 			// create new bar
 			if !fundingRateReverseMode {
@@ -281,7 +261,7 @@ func (c *Core) Run() {
 		if quantityPerOrder > totalQuantity {
 			quantityPerOrder = totalQuantity
 		} else {
-			quantityPerOrder = c.Quantity
+			quantityPerOrder = c.Setting.Quantity
 		}
 
 		hedge := make([]binance.BinanceHedge, 0)
@@ -293,21 +273,21 @@ func (c *Core) Run() {
 			EndStruct(&hedge)
 
 		for _, v := range hedge {
-			if v.Symbol == c.Symbol {
+			if v.Symbol == c.Setting.Symbol {
 				markPriceDirection := binanceIndexDirection(v.Index)
 
 				logger.Info("MarkPriceGap=", v.MarkPriceGap)
 
-				if c.Arbitrage && c.Difference > v.MarkPriceGap {
+				if c.Setting.Arbitrage && c.Setting.Difference > v.MarkPriceGap {
 					break
 				}
 
-				if !c.Arbitrage {
+				if !c.Setting.Arbitrage {
 					if v.FundingRateGap == 0 {
 						continue
 					}
 
-					if v.MarkPriceGap > c.Difference {
+					if v.MarkPriceGap > c.Setting.Difference {
 						break
 					}
 				}
@@ -321,7 +301,7 @@ func (c *Core) Run() {
 				}
 
 				// record arbitrage direction
-				if c.Arbitrage {
+				if c.Setting.Arbitrage {
 					if arbitrageDirection == nil {
 						if markPriceDirection == v.Direction {
 							break
@@ -343,7 +323,7 @@ func (c *Core) Run() {
 				var busdAskSize float64
 
 				useLeverage := map[string]string{
-					"leverage": fmt.Sprint(c.Leverage),
+					"leverage": fmt.Sprint(c.Setting.Leverage),
 				}
 
 				wg := &sync.WaitGroup{}
@@ -394,18 +374,18 @@ func (c *Core) Run() {
 				currentProgressBarTotal += 1
 
 				// handle order
-				if c.Reduce {
+				if c.Setting.Reduce {
 					v.Direction = !v.Direction
 
-					if c.BidSide == "BUSD" {
+					if c.Setting.BidSide == "BUSD" {
 						v.Direction = false
-					} else if c.BidSide == "USDT" {
+					} else if c.Setting.BidSide == "USDT" {
 						v.Direction = true
 					}
 				} else if currentDirection == nil {
 					currentDirection = &v.Direction
 				} else if *currentDirection != v.Direction {
-					if totalQuantity >= c.Total {
+					if totalQuantity >= c.Setting.Total {
 						step = 1
 					} else {
 						step = -1
@@ -414,7 +394,7 @@ func (c *Core) Run() {
 					currentDirection = &v.Direction
 
 					// reset quantity
-					quantityPerOrder = c.Quantity
+					quantityPerOrder = c.Setting.Quantity
 
 					logger.Info("direction changed, close orders...")
 
@@ -459,7 +439,7 @@ func (c *Core) Run() {
 					}
 				}
 
-				if c.Reduce || fundingRateReverseMode {
+				if c.Setting.Reduce || fundingRateReverseMode {
 					binanceOrderBUSD.ReduceOnly = "true"
 					binanceOrderUSDT.ReduceOnly = "true"
 				}

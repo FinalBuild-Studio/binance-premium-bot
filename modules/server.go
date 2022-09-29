@@ -32,7 +32,7 @@ func (h *Http) Serve() {
 		ID := uuid.New().String()
 
 		go func(r models.ConfigSetting) {
-			NewCore(r, ch, &ID, h.RateLimiter).Run()
+			NewCore(&r, ch, &ID, h.RateLimiter).Run()
 		}(r)
 
 		ctx.Data(http.StatusOK, "text/plain", []byte(ID))

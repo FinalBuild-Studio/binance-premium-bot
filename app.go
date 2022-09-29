@@ -32,7 +32,7 @@ func main() {
 	} else if *config != "" {
 		m.NewYaml(*config, ratelimiter)
 	} else {
-		m.NewCore(models.ConfigSetting{
+		m.NewCore(&models.ConfigSetting{
 			ApiKey:     *apiKey,
 			ApiSecret:  *apiSecret,
 			Symbol:     *symbol,
