@@ -491,8 +491,14 @@ func run(
 					break
 				}
 
-				if !arbitrage && v.MarkPriceGap > difference {
-					break
+				if !arbitrage {
+					if v.FundingRateGap == 0 {
+						continue
+					}
+
+					if v.MarkPriceGap > difference {
+						break
+					}
 				}
 
 				if arbitrageDirection != nil && ((!arbitrageTriggered && *arbitrageDirection != markPriceDirection) || (arbitrageTriggered && *arbitrageDirection == markPriceDirection)) {
