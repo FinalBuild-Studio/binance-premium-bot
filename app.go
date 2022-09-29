@@ -357,19 +357,21 @@ func run(
 
 			openQty, _ := decimal.Min(openQtyForBUSD.Abs(), openQtyForUSDT.Abs()).Float64()
 
-			direction := openQtyForBUSD.GreaterThan(decimal.NewFromInt(0))
+			if openQty > 0 {
+				direction := openQtyForBUSD.GreaterThan(decimal.NewFromInt(0))
 
-			currentDirection = &direction
-			currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
+				currentDirection = &direction
+				currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
 
-			if currentProgressBarTotal < 0 {
-				currentProgressBarTotal = 0
+				if currentProgressBarTotal < 0 {
+					currentProgressBarTotal = 0
+				}
+
+				totalQuantity, _ = decimal.
+					NewFromFloat(totalQuantity).
+					Sub(decimal.NewFromFloat(openQty)).
+					Float64()
 			}
-
-			totalQuantity, _ = decimal.
-				NewFromFloat(totalQuantity).
-				Sub(decimal.NewFromFloat(openQty)).
-				Float64()
 		}
 	}
 
