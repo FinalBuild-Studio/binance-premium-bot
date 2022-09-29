@@ -113,11 +113,11 @@ leverage: 10
 differece: 0.005
 settings:
 - symbol: LDO
-  quantity: 1000
-  total: 10
+  quantity: 10
+  total: 1000
 - symbol: LUNA2
-  quantity: 1000
-  total: 10
+  quantity: 10
+  total: 1000
 ```
 
 ## Serve in http mode
