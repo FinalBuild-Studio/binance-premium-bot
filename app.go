@@ -30,7 +30,7 @@ func main() {
 	if *serve {
 		m.NewHttp(ratelimiter).Serve()
 	} else if *config != "" {
-		m.NewYaml(*config, ratelimiter)
+		m.NewYaml(*config, ratelimiter).Run()
 	} else {
 		m.NewCore(&models.ConfigSetting{
 			ApiKey:     *apiKey,

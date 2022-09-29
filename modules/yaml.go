@@ -22,7 +22,7 @@ func NewYaml(path string, ratelimiter ratelimit.Limiter) *Yaml {
 	}
 }
 
-func (y *Yaml) Read() {
+func (y *Yaml) Run() {
 	filename, _ := filepath.Abs(y.Path)
 	file, err := ioutil.ReadFile(filename)
 
