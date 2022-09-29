@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CapsLock-Studio/binance-premium-bot/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/parnurzeal/gorequest"
@@ -37,43 +38,6 @@ const (
 
 	FUNDING_RATE_ENDPOINT string = "https://wiwisorich.capslock.tw"
 )
-
-// {"type":"MARKET","symbol":"BTCUSDT","side":"BUY","quantity":"0.001"}
-type BinancePlaceOrder struct {
-	Type       string `json:"type"`
-	Symbol     string `json:"symbol"`
-	Side       string `json:"side"`
-	Quantity   string `json:"quantity"`
-	ReduceOnly string `json:"reduceOnly"`
-}
-
-type ConfigSetting struct {
-	Symbol     string  `yaml:"symbol" json:"symbol"`
-	ApiKey     string  `yaml:"apiKey" json:"apiKey"`
-	ApiSecret  string  `yaml:"apiSecret" json:"apiSecret"`
-	Quantity   float64 `yaml:"quantity" json:"quantity"`
-	Total      float64 `yaml:"total" json:"total"`
-	Reduce     bool    `yaml:"reduce" json:"reduce"`
-	Arbitrage  bool    `yaml:"arbitrage" json:"arbitrage"`
-	Difference float64 `yaml:"difference" json:"difference"`
-	Leverage   int     `yaml:"leverage" json:"leverage"`
-	BidSide    string  `yaml:"bidSide" json:"bidSide"`
-	Monitor    bool    `yaml:"monitor" json:"monitor"`
-}
-
-type Config struct {
-	ApiKey     string          `yaml:"apiKey"`
-	ApiSecret  string          `yaml:"apiSecret"`
-	Leverage   int             `yaml:"leverage"`
-	Difference float64         `yaml:"difference"`
-	Settings   []ConfigSetting `yaml:"settings"`
-}
-
-type BinanceOrder struct {
-	Symbol       string `json:"symbol"`
-	PositionSide string `json:"positionSide"`
-	PositionAmt  string `json:"positionAmt"`
-}
 
 func getDepth(
 	symbol string,
@@ -166,14 +130,14 @@ func httpServer(rl ratelimit.Limiter) {
 	route := gin.Default()
 
 	route.POST("/", func(ctx *gin.Context) {
-		var r ConfigSetting
+		var r models.ConfigSetting
 		if ctx.Bind(&r) != nil {
 			return
 		}
 
 		ID := uuid.New().String()
 
-		go func(r ConfigSetting) {
+		go func(r models.ConfigSetting) {
 			run(
 				r.ApiKey,
 				r.ApiSecret,
@@ -213,7 +177,7 @@ func readConfig(path string, rl ratelimit.Limiter) {
 		panic(err)
 	}
 
-	config := Config{}
+	config := models.Config{}
 	yaml.Unmarshal(file, &config)
 
 	wg := &sync.WaitGroup{}
@@ -221,7 +185,7 @@ func readConfig(path string, rl ratelimit.Limiter) {
 	for _, setting := range config.Settings {
 		wg.Add(1)
 
-		go func(setting ConfigSetting) {
+		go func(setting models.ConfigSetting) {
 			defer wg.Done()
 			if setting.ApiKey == "" {
 				setting.ApiKey = config.ApiKey
@@ -351,8 +315,8 @@ func run(
 	if reduce {
 		arbitrage = false
 	} else if monitor {
-		openPositionForUSDT := make([]BinanceOrder, 0)
-		openPositionForBUSD := make([]BinanceOrder, 0)
+		openPositionForUSDT := make([]models.BinanceOrder, 0)
+		openPositionForBUSD := make([]models.BinanceOrder, 0)
 		wg := &sync.WaitGroup{}
 
 		wg.Add(1)
@@ -623,12 +587,12 @@ func run(
 
 				perQuantity := decimal.NewFromFloat(quantityPerOrder).String()
 
-				binanceOrderBUSD := BinancePlaceOrder{
+				binanceOrderBUSD := models.BinancePlaceOrder{
 					Type:     "MARKET",
 					Symbol:   v.Symbol + "BUSD",
 					Quantity: perQuantity,
 				}
-				binanceOrderUSDT := BinancePlaceOrder{
+				binanceOrderUSDT := models.BinancePlaceOrder{
 					Type:     "MARKET",
 					Symbol:   v.Symbol + "USDT",
 					Quantity: perQuantity,
@@ -657,7 +621,7 @@ func run(
 					binanceOrderUSDT.ReduceOnly = "true"
 				}
 
-				orders := make([]BinancePlaceOrder, 0)
+				orders := make([]models.BinancePlaceOrder, 0)
 				orders = append(orders, binanceOrderBUSD)
 				orders = append(orders, binanceOrderUSDT)
 
