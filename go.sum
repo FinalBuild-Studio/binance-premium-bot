@@ -1,5 +1,7 @@
 github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220924070956-c4107368d159 h1:sDWOYshkd/9UvwP0QqM6DnQ558Kng3DTPcgSySQpsy4=
 github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220924070956-c4107368d159/go.mod h1:UALp44aLveqjKTKnh3kGw+QQvPlVXFagY10r7Oro7+A=
+github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220929184920-fac7d5ebd044 h1:0fiIZVGRT57CtTYVVUWTuaBQcOGYLZfjzoGIvmsdDtk=
+github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220929184920-fac7d5ebd044/go.mod h1:UALp44aLveqjKTKnh3kGw+QQvPlVXFagY10r7Oro7+A=
 github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 h1:MzBOUgng9orim59UnfUTLRjMpd09C5uEVQ6RPGeCaVI=
 github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129/go.mod h1:rFgpPQZYZ8vdbc+48xibu8ALc3yeyd64IhHS+PU6Yyg=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=

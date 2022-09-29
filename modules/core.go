@@ -8,7 +8,6 @@ import (
 	"math"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +55,7 @@ func (c *Core) GetDepth(
 	ask,
 	askSize float64,
 ) {
-	bidAndAsk := struct {
+	depth := struct {
 		Asks [][]string `json:"asks"`
 		Bids [][]string `json:"bids"`
 	}{}
@@ -68,13 +67,13 @@ func (c *Core) GetDepth(
 			"limit":  "5",
 			"symbol": c.Setting.Symbol + currency,
 		},
-	).EndStruct(&bidAndAsk)
+	).EndStruct(&depth)
 
-	if len(bidAndAsk.Bids) > 0 && len(bidAndAsk.Asks) > 0 {
-		bid, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][0], 64)
-		ask, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][0], 64)
-		bidSize, _ = strconv.ParseFloat(bidAndAsk.Bids[len(bidAndAsk.Bids)-1][1], 64)
-		askSize, _ = strconv.ParseFloat(bidAndAsk.Asks[len(bidAndAsk.Asks)-1][1], 64)
+	if len(depth.Bids) > 0 && len(depth.Asks) > 0 {
+		bid, _ = strconv.ParseFloat(depth.Bids[len(depth.Bids)-1][0], 64)
+		ask, _ = strconv.ParseFloat(depth.Asks[len(depth.Asks)-1][0], 64)
+		bidSize, _ = strconv.ParseFloat(depth.Bids[len(depth.Bids)-1][1], 64)
+		askSize, _ = strconv.ParseFloat(depth.Asks[len(depth.Asks)-1][1], 64)
 	}
 
 	return
@@ -274,7 +273,7 @@ func (c *Core) Run() {
 
 		for _, v := range hedge {
 			if v.Symbol == c.Setting.Symbol {
-				markPriceDirection := binanceIndexDirection(v.Index)
+				markPriceDirection := v.GetPrice("BUSD") > v.GetPrice("USDT")
 
 				logger.Info("MarkPriceGap=", v.MarkPriceGap)
 
@@ -485,23 +484,6 @@ func (c *Core) Run() {
 
 		time.Sleep(1 * time.Second)
 	}
-}
-
-func binanceIndexDirection(index []binance.BinancePremium) bool {
-	var busd float64
-	var usdt float64
-
-	for _, v := range index {
-		if strings.HasSuffix(v.Symbol, "BUSD") {
-			busd, _ = strconv.ParseFloat(v.MarkPrice, 64)
-		}
-
-		if strings.HasSuffix(v.Symbol, "USDT") {
-			usdt, _ = strconv.ParseFloat(v.MarkPrice, 64)
-		}
-	}
-
-	return busd > usdt
 }
 
 func getMaxProgressBar(totalQuantity, quantityPerOrder float64) int {

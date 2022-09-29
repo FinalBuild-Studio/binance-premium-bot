@@ -3,7 +3,7 @@ module github.com/CapsLock-Studio/binance-premium-bot
 go 1.19
 
 require (
-	github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220924070956-c4107368d159
+	github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220929184920-fac7d5ebd044
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.0
