@@ -294,7 +294,7 @@ func (c *Core) Run() {
 				}
 
 				if !c.Setting.Arbitrage {
-					if v.FundingRateGap == 0 {
+					if v.FundingRateGap == 0 && !c.Setting.Reduce {
 						continue
 					}
 
