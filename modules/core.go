@@ -474,13 +474,15 @@ func (c *Core) Run() {
 					batchOrders, _ := json.Marshal(orders)
 
 					logger.Info(string(batchOrders))
-					c.MakeRequest(
+
+					_, body, _ := c.MakeRequest(
 						BINANCE_FAPI_BATCH_ORDERS,
 						gorequest.POST,
 						map[string]string{
 							"batchOrders": string(batchOrders),
 						},
 					).End()
+					logrus.Info(string(body))
 				}
 
 				// update total
