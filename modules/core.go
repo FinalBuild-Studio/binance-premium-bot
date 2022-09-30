@@ -144,64 +144,64 @@ func (c *Core) Run() {
 	var arbitrageDirection *bool
 	var arbitrageTriggered bool
 
+	openPositionForUSDT := make([]models.BinanceOrder, 0)
+	openPositionForBUSD := make([]models.BinanceOrder, 0)
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.MakeRequest(
+			BINANCE_FAPI_OPEN_ORDERS,
+			gorequest.GET,
+			map[string]string{
+				"symbol":     c.Setting.Symbol + "USDT",
+				"recvWindow": "5000",
+			},
+		).EndStruct(&openPositionForUSDT)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.MakeRequest(
+			BINANCE_FAPI_OPEN_ORDERS,
+			gorequest.GET,
+			map[string]string{
+				"symbol":     c.Setting.Symbol + "BUSD",
+				"recvWindow": "5000",
+			},
+		).EndStruct(&openPositionForBUSD)
+	}()
+
+	wg.Wait()
+
+	if len(openPositionForBUSD) > 0 && len(openPositionForUSDT) > 0 {
+		openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].PositionAmt)
+		openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].PositionAmt)
+
+		openQty, _ := decimal.Min(openQtyForBUSD.Abs(), openQtyForUSDT.Abs()).Float64()
+
+		if openQty > 0 {
+			direction := openQtyForBUSD.GreaterThan(decimal.NewFromInt(0))
+
+			currentDirection = &direction
+			currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
+
+			if currentProgressBarTotal < 0 {
+				currentProgressBarTotal = 0
+			}
+
+			totalQuantity, _ = decimal.
+				NewFromFloat(totalQuantity).
+				Sub(decimal.NewFromFloat(openQty)).
+				Float64()
+		}
+	}
+
 	// force set arbitrage=OFF
 	if c.Setting.Reduce {
 		c.Setting.Arbitrage = false
-	} else if c.Setting.Monitor {
-		openPositionForUSDT := make([]models.BinanceOrder, 0)
-		openPositionForBUSD := make([]models.BinanceOrder, 0)
-		wg := &sync.WaitGroup{}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			c.MakeRequest(
-				BINANCE_FAPI_OPEN_ORDERS,
-				gorequest.GET,
-				map[string]string{
-					"symbol":     c.Setting.Symbol + "USDT",
-					"recvWindow": "5000",
-				},
-			).EndStruct(&openPositionForUSDT)
-		}()
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			c.MakeRequest(
-				BINANCE_FAPI_OPEN_ORDERS,
-				gorequest.GET,
-				map[string]string{
-					"symbol":     c.Setting.Symbol + "BUSD",
-					"recvWindow": "5000",
-				},
-			).EndStruct(&openPositionForBUSD)
-		}()
-
-		wg.Wait()
-
-		if len(openPositionForBUSD) > 0 && len(openPositionForUSDT) > 0 {
-			openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].PositionAmt)
-			openQtyForUSDT, _ := decimal.NewFromString(openPositionForUSDT[0].PositionAmt)
-
-			openQty, _ := decimal.Min(openQtyForBUSD.Abs(), openQtyForUSDT.Abs()).Float64()
-
-			if openQty > 0 {
-				direction := openQtyForBUSD.GreaterThan(decimal.NewFromInt(0))
-
-				currentDirection = &direction
-				currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
-
-				if currentProgressBarTotal < 0 {
-					currentProgressBarTotal = 0
-				}
-
-				totalQuantity, _ = decimal.
-					NewFromFloat(totalQuantity).
-					Sub(decimal.NewFromFloat(openQty)).
-					Float64()
-			}
-		}
 	}
 
 	// initialize step
@@ -385,9 +385,14 @@ func (c *Core) Run() {
 				if c.Setting.Reduce {
 					v.Direction = !v.Direction
 
-					if c.Setting.BidSide == "BUSD" {
+					if currentDirection == nil {
+						logger.Info("can't find current direction")
+						break
+					}
+
+					if *currentDirection {
 						v.Direction = false
-					} else if c.Setting.BidSide == "USDT" {
+					} else {
 						v.Direction = true
 					}
 				} else if currentDirection == nil {

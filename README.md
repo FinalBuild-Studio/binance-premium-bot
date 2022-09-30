@@ -49,16 +49,12 @@ Usage of ./binance-premium-bot:
     	binance api secret
   -arbitrage
     	use arbitrage mode
-  -bidSide string
-    	determine bid side in reduce mode
   -config string
     	yaml config for multi-assets
   -difference float
     	BUSD & USDT difference (default 0.05)
   -leverage int
     	futures leverage (default 10)
-  -monitor
-    	assume you have positions on binance
   -quantity float
     	quantity per order
   -reduce

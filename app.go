@@ -19,9 +19,7 @@ func main() {
 	arbitrage := flag.Bool("arbitrage", false, "use arbitrage mode")
 	difference := flag.Float64("difference", .05, "BUSD & USDT difference")
 	leverage := flag.Int("leverage", 10, "futures leverage")
-	bidSide := flag.String("bidSide", "", "determine bid side in reduce mode")
 	config := flag.String("config", "", "yaml config for multi-assets")
-	monitor := flag.Bool("monitor", false, "assume you have positions on binance")
 	serve := flag.Bool("serve", false, "serve in http mode")
 	flag.Parse()
 
@@ -42,8 +40,6 @@ func main() {
 			Arbitrage:  *arbitrage,
 			Difference: *difference,
 			Leverage:   *leverage,
-			BidSide:    *bidSide,
-			Monitor:    *monitor,
 		}, nil, nil, ratelimiter).Run()
 	}
 }
