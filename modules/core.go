@@ -38,12 +38,17 @@ type Core struct {
 	RateLimiter ratelimit.Limiter
 }
 
-func NewCore(setting *models.ConfigSetting, channel chan string, ID *string, rl ratelimit.Limiter) *Core {
+func NewCore(
+	setting *models.ConfigSetting,
+	channel chan string,
+	ID *string,
+	ratelimiter ratelimit.Limiter,
+) *Core {
 	return &Core{
 		Setting:     setting,
 		Channel:     channel,
 		ID:          ID,
-		RateLimiter: rl,
+		RateLimiter: ratelimiter,
 	}
 }
 
@@ -125,7 +130,11 @@ func (c *Core) Run() {
 	currentProgressBarTotal := 0
 	totalQuantity := c.Setting.Total
 	quantityPerOrder := c.Setting.Quantity
-	progressBarTotal := getMaxProgressBar(totalQuantity, quantityPerOrder)
+	progressBarTotal := int(totalQuantity / quantityPerOrder)
+
+	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
+		progressBarTotal += 1
+	}
 
 	maxProgressBar := progressBarTotal
 
@@ -484,14 +493,4 @@ func (c *Core) Run() {
 
 		time.Sleep(1 * time.Second)
 	}
-}
-
-func getMaxProgressBar(totalQuantity, quantityPerOrder float64) int {
-	progressBarTotal := int(totalQuantity / quantityPerOrder)
-
-	if int(math.Mod(totalQuantity, quantityPerOrder)) > 0 {
-		progressBarTotal += 1
-	}
-
-	return progressBarTotal
 }
