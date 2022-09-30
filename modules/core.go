@@ -189,16 +189,18 @@ func (c *Core) Run() {
 			direction := openQtyForBUSD.GreaterThan(decimal.NewFromInt(0))
 
 			currentDirection = &direction
-			currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
 
-			if currentProgressBarTotal < 0 {
-				currentProgressBarTotal = 0
+			if !c.Setting.Reduce {
+				currentProgressBarTotal = maxProgressBar - int(openQty/quantityPerOrder)
+
+				if currentProgressBarTotal < 0 {
+					currentProgressBarTotal = 0
+				}
+				totalQuantity, _ = decimal.
+					NewFromFloat(totalQuantity).
+					Sub(decimal.NewFromFloat(openQty)).
+					Float64()
 			}
-
-			totalQuantity, _ = decimal.
-				NewFromFloat(totalQuantity).
-				Sub(decimal.NewFromFloat(openQty)).
-				Float64()
 		}
 	}
 
