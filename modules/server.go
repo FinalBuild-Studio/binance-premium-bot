@@ -25,6 +25,10 @@ func (h *Http) Serve() {
 
 	route.POST("/", func(ctx *gin.Context) {
 		var r models.ConfigSetting
+
+		r.Difference = DEFAULT_DIFFERENCE
+		r.Leverage = DEFAULT_LEVERAGE
+
 		if ctx.Bind(&r) != nil {
 			return
 		}

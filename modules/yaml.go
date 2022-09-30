@@ -30,7 +30,10 @@ func (y *Yaml) Run() {
 		panic(err)
 	}
 
-	config := models.Config{}
+	config := models.Config{
+		Difference: DEFAULT_DIFFERENCE,
+		Leverage:   DEFAULT_LEVERAGE,
+	}
 	yaml.Unmarshal(file, &config)
 
 	wg := &sync.WaitGroup{}

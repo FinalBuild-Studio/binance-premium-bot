@@ -29,6 +29,9 @@ const (
 	BINANCE_FAPI_OPEN_ORDERS  string = "/positionRisk"
 
 	FUNDING_RATE_ENDPOINT string = "https://wiwisorich.capslock.tw"
+
+	DEFAULT_LEVERAGE   int     = 10
+	DEFAULT_DIFFERENCE float64 = 0.05
 )
 
 type Core struct {
