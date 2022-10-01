@@ -29,6 +29,7 @@ func (h *Http) Serve() {
 
 		r.Difference = DEFAULT_DIFFERENCE
 		r.Leverage = DEFAULT_LEVERAGE
+		r.Before = DEFAULT_MINUTES
 
 		if ctx.Bind(&r) != nil {
 			return
