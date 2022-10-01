@@ -3,7 +3,7 @@ module github.com/CapsLock-Studio/binance-premium-bot
 go 1.19
 
 require (
-	github.com/CapsLock-Studio/binance-premium-index v0.0.0-20220929184920-fac7d5ebd044
+	github.com/CapsLock-Studio/binance-premium-index v0.0.0-20221001075031-112bcad96bd0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.0
@@ -28,8 +28,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/smartystreets/goconvey v1.7.2 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
-	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0 // indirect
-	golang.org/x/net v0.0.0-20220921203646-d300de134e69 // indirect
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
+	golang.org/x/net v0.0.0-20220930213112-107f3e3c3b0b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -42,6 +42,6 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )

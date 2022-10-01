@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/CapsLock-Studio/binance-premium-bot/models"
@@ -36,6 +37,12 @@ func (h *Http) Serve() {
 		ID := uuid.New().String()
 
 		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Println(err)
+				}
+			}()
+
 			NewCore(&r, ch, &ID, h.RateLimiter).Run()
 		}()
 

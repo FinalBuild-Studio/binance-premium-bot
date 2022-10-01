@@ -49,6 +49,8 @@ Usage of ./binance-premium-bot:
     	binance api secret
   -arbitrage
     	use arbitrage mode
+  -before float
+    	change direction before n minutes (default 480)
   -config string
     	yaml config for multi-assets
   -difference float
@@ -63,6 +65,8 @@ Usage of ./binance-premium-bot:
     	serve in http mode
   -symbol string
     	binance future symbol
+  -threshold float
+    	minimum threshold
   -total float
     	total quantity
 ```

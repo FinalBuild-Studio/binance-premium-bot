@@ -32,6 +32,7 @@ const (
 
 	DEFAULT_LEVERAGE   int     = 10
 	DEFAULT_DIFFERENCE float64 = 0.05
+	DEFAULT_HOUR       float64 = 480
 )
 
 type Core struct {
@@ -377,6 +378,7 @@ func (c *Core) Run() {
 					busdBidSize > quantityPerOrder,
 					usdtAskSize > quantityPerOrder,
 					busdAskSize > quantityPerOrder,
+					quantityPerOrder > 0,
 				}
 
 				if slices.Contains(rules, false) {
@@ -403,6 +405,24 @@ func (c *Core) Run() {
 				} else if currentDirection == nil {
 					currentDirection = &v.Direction
 				} else if *currentDirection != v.Direction {
+					yield := v.FundingRateGap * 365 * 100 * float64(c.Setting.Leverage)
+
+					if !c.Setting.Reduce {
+						if c.Setting.Threshold > yield {
+							logger.Info("not reduce mode and threshold is greater then yield=", yield)
+							continue
+						}
+
+						minutes := v.GetLeftMinutes("BUSD")
+						if minutes >= c.Setting.Before {
+							logger.
+								WithField("before", c.Setting.Before).
+								WithField("minutes", minutes).
+								Info("left minutes is greater than config")
+							continue
+						}
+					}
+
 					if totalQuantity >= c.Setting.Total {
 						step = 1
 					} else {

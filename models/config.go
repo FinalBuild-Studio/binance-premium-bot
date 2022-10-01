@@ -10,6 +10,8 @@ type ConfigSetting struct {
 	Arbitrage  bool    `yaml:"arbitrage" json:"arbitrage"`
 	Difference float64 `yaml:"difference" json:"difference"`
 	Leverage   int     `yaml:"leverage" json:"leverage"`
+	Threshold  float64 `json:"threshold"`
+	Before     float64 `json:"before"`
 }
 
 type Config struct {

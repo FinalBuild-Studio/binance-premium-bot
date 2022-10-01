@@ -17,10 +17,12 @@ func main() {
 	total := flag.Float64("total", 0, "total quantity")
 	reduce := flag.Bool("reduce", false, "use reduce mode")
 	arbitrage := flag.Bool("arbitrage", false, "use arbitrage mode")
-	difference := flag.Float64("difference", .05, "BUSD & USDT difference")
+	difference := flag.Float64("difference", m.DEFAULT_DIFFERENCE, "BUSD & USDT difference")
 	leverage := flag.Int("leverage", 10, "futures leverage")
 	config := flag.String("config", "", "yaml config for multi-assets")
 	serve := flag.Bool("serve", false, "serve in http mode")
+	threshold := flag.Float64("threshold", 0, "minimum threshold")
+	before := flag.Float64("before", m.DEFAULT_HOUR, "change direction before n minutes")
 	flag.Parse()
 
 	ratelimiter := ratelimit.New(1)
@@ -40,6 +42,8 @@ func main() {
 			Arbitrage:  *arbitrage,
 			Difference: *difference,
 			Leverage:   *leverage,
+			Threshold:  *threshold,
+			Before:     *before,
 		}, nil, nil, ratelimiter).Run()
 	}
 }
