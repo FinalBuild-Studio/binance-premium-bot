@@ -22,7 +22,7 @@ func main() {
 	config := flag.String("config", "", "yaml config for multi-assets")
 	serve := flag.Bool("serve", false, "serve in http mode")
 	threshold := flag.Float64("threshold", 0, "minimum threshold")
-	before := flag.Float64("before", m.DEFAULT_HOUR, "change direction before n minutes")
+	before := flag.Float64("before", m.DEFAULT_MINUTES, "change direction before n minutes")
 	flag.Parse()
 
 	ratelimiter := ratelimit.New(1)

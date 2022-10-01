@@ -33,6 +33,7 @@ func (y *Yaml) Run() {
 	config := models.Config{
 		Difference: DEFAULT_DIFFERENCE,
 		Leverage:   DEFAULT_LEVERAGE,
+		Before:     DEFAULT_MINUTES,
 	}
 	yaml.Unmarshal(file, &config)
 
@@ -57,6 +58,10 @@ func (y *Yaml) Run() {
 
 			if setting.Difference == 0 {
 				setting.Difference = config.Difference
+			}
+
+			if setting.Before == 0 {
+				setting.Before = config.Before
 			}
 
 			NewCore(&setting, nil, nil, y.RateLimiter).Run()

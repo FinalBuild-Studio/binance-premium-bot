@@ -32,7 +32,7 @@ const (
 
 	DEFAULT_LEVERAGE   int     = 10
 	DEFAULT_DIFFERENCE float64 = 0.05
-	DEFAULT_HOUR       float64 = 480
+	DEFAULT_MINUTES    float64 = 480
 )
 
 type Core struct {

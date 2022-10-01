@@ -20,4 +20,5 @@ type Config struct {
 	Leverage   int             `yaml:"leverage"`
 	Difference float64         `yaml:"difference"`
 	Settings   []ConfigSetting `yaml:"settings"`
+	Before     float64         `yaml:"before"`
 }
