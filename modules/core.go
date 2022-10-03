@@ -131,6 +131,10 @@ func (c *Core) Run() {
 		logger = logger.WithField("key", c.Setting.ApiKey[0:5])
 	}
 
+	if c.ID != nil {
+		logger = logger.WithField("id", *c.ID)
+	}
+
 	currentProgressBarTotal := 0
 	totalQuantity := c.Setting.Total
 	quantityPerOrder := c.Setting.Quantity
