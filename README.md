@@ -8,15 +8,17 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 <span color="red">Use it at your own risk!!!</span>
 
 ## Roadmap
-- [x] (binance) delta neutral hedge mode
+- [x] (binance) perp delta neutral hedge mode
 - [x] (binance) reduce mode
 - [x] (binance) arbitrage mode
 - [x] http server
 - [x] yaml config
 - [x] managed service for whitelist users
 - [ ] persistent storage for http mode
-- [ ] (binance + ftx) delta neutral hedge mode
-- [ ] (binance + ftx) reduce mode
+- [ ] (binance + ftx) perp delta neutral hedge mode
+- [ ] (binance + ftx) perp reduce mode
+- [ ] binance spot & perp delta neutral hedge mode
+- [ ] ftx spot & perp delta neutral hedge mode
 
 ## What you should prepare first
 
