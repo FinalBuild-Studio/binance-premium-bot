@@ -13,9 +13,9 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 - [x] (binance) arbitrage mode
 - [x] http server
 - [x] yaml config
-- [] persisten storage for http mode
-- [] (binance + ftx) delta neutral hedge mode
-- [] (binance + ftx) reduce mode
+- [ ] persisten storage for http mode
+- [ ] (binance + ftx) delta neutral hedge mode
+- [ ] (binance + ftx) reduce mode
 
 ## What you should prepare first
 
