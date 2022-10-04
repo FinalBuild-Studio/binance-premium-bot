@@ -444,7 +444,7 @@ func (c *Core) Run() {
 				} else if currentDirection == nil {
 					currentDirection = &v.Direction
 				} else if *currentDirection != v.Direction {
-					yield := v.FundingRateGap * 365 * 100 * float64(c.Setting.Leverage)
+					yield := (v.FundingRateGap * 365 * 3 * float64(c.Setting.Leverage)) / 2
 
 					if !c.Setting.Reduce {
 						if c.Setting.Threshold > yield {
