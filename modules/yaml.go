@@ -30,11 +30,11 @@ func (y *Yaml) Run() {
 		panic(err)
 	}
 
-	config := models.Config{
-		Difference: DEFAULT_DIFFERENCE,
-		Leverage:   DEFAULT_LEVERAGE,
-		Before:     DEFAULT_MINUTES,
-	}
+	config := models.Config{}
+	config.Difference = DEFAULT_DIFFERENCE
+	config.Leverage = DEFAULT_LEVERAGE
+	config.Before = DEFAULT_MINUTES
+
 	yaml.Unmarshal(file, &config)
 
 	wg := &sync.WaitGroup{}
@@ -62,6 +62,10 @@ func (y *Yaml) Run() {
 
 			if setting.Before == 0 {
 				setting.Before = config.Before
+			}
+
+			if setting.Webhook == "" {
+				setting.Webhook = config.Webhook
 			}
 
 			NewCore(&setting, nil, nil, y.RateLimiter).Run()

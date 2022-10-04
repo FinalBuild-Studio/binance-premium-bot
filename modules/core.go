@@ -36,24 +36,30 @@ const (
 )
 
 type Core struct {
-	Setting     *models.ConfigSetting
-	Channel     chan string
-	ID          *string
-	RateLimiter ratelimit.Limiter
+	Setting        *models.ConfigSetting
+	EventReceiver  chan string
+	ID             *string
+	RateLimiter    ratelimit.Limiter
+	EventPublisher chan models.EventMessage
 }
 
 func NewCore(
 	setting *models.ConfigSetting,
-	channel chan string,
+	eventReceiver chan string,
 	ID *string,
 	ratelimiter ratelimit.Limiter,
 ) *Core {
 	return &Core{
-		Setting:     setting,
-		Channel:     channel,
-		ID:          ID,
-		RateLimiter: ratelimiter,
+		Setting:        setting,
+		EventReceiver:  eventReceiver,
+		ID:             ID,
+		RateLimiter:    ratelimiter,
+		EventPublisher: make(chan models.EventMessage),
 	}
+}
+
+func (c *Core) GetPublisher() <-chan models.EventMessage {
+	return c.EventPublisher
 }
 
 func (c *Core) GetDepth(
@@ -121,6 +127,22 @@ func (c *Core) MakeRequest(
 }
 
 func (c *Core) Run() {
+	go func() {
+		for v := range c.GetPublisher() {
+			if v.Setting.Webhook != "" {
+				gorequest.
+					New().
+					Post(v.Setting.Webhook).
+					Send(map[string]any{
+						"type":    v.Type,
+						"id":      *c.ID,
+						"symbol":  v.Setting.Symbol,
+						"message": v.Message,
+					})
+			}
+		}
+	}()
+
 	logger := logrus.
 		New().
 		WithField("symbol", c.Setting.Symbol).
@@ -134,6 +156,8 @@ func (c *Core) Run() {
 	if c.ID != nil {
 		logger = logger.WithField("id", *c.ID)
 	}
+
+	c.EventPublisher <- models.EventMessage{Type: "create", Setting: c.Setting}
 
 	currentProgressBarTotal := 0
 	totalQuantity := c.Setting.Total
@@ -235,9 +259,9 @@ func (c *Core) Run() {
 		// wait 1 seconds
 		c.RateLimiter.Take()
 
-		if c.Channel != nil && len(c.Channel) > 0 {
+		if c.EventReceiver != nil && len(c.EventReceiver) > 0 {
 			logrus.Info("Check channel...")
-			buffered := <-c.Channel
+			buffered := <-c.EventReceiver
 
 			if buffered == *c.ID {
 				logger.Info("Receive close signal...")
@@ -245,7 +269,7 @@ func (c *Core) Run() {
 			}
 
 			logger.Info("Send to channel again")
-			c.Channel <- buffered
+			c.EventReceiver <- buffered
 		}
 
 		if totalQuantity <= 0 && c.Setting.Reduce && !c.Setting.Arbitrage {
@@ -340,6 +364,8 @@ func (c *Core) Run() {
 				var busdBidSize float64
 				var busdAskSize float64
 
+				logger.Info("ask bid & ask depth...")
+
 				useLeverage := map[string]string{
 					"leverage": fmt.Sprint(c.Setting.Leverage),
 				}
@@ -385,6 +411,15 @@ func (c *Core) Run() {
 					quantityPerOrder > 0,
 				}
 
+				logger.
+					WithField("USDT BID SIZE", usdtBidSize).
+					WithField("USDT ASK SIZE", usdtAskSize).
+					WithField("BUSD BID SIZE", busdBidSize).
+					WithField("BUSD ASK SIZE", busdAskSize).
+					WithField("quantity", quantityPerOrder).
+					WithField("total", totalQuantity).
+					Info("check size and order quantity")
+
 				if slices.Contains(rules, false) {
 					break
 				}
@@ -426,6 +461,8 @@ func (c *Core) Run() {
 							continue
 						}
 					}
+
+					c.EventPublisher <- models.EventMessage{Type: "reverse", Setting: c.Setting}
 
 					if totalQuantity >= c.Setting.Total {
 						step = 1
@@ -496,6 +533,21 @@ func (c *Core) Run() {
 					logger.Info("USDT ASK=", usdtAsk)
 					logger.Info("BUSD BID=", busdBid)
 					logger.Info("BUSD ASK=", busdAsk)
+
+					c.EventPublisher <- models.EventMessage{
+						Type:    "place",
+						Setting: c.Setting,
+						Message: map[string]float64{
+							"USDT_ASK_PRICE": usdtAsk,
+							"BUSD_ASK_PRICE": busdAsk,
+							"BUSD_BID_PRICE": busdBid,
+							"USDT_BID_PRICE": usdtBid,
+							"USDT_BID_SIZE":  usdtBidSize,
+							"USDT_ASK_SIZE":  usdtAskSize,
+							"BUSD_BID_SIZE":  busdBidSize,
+							"BUSD_ASK_SIZE":  busdAskSize,
+						},
+					}
 
 					batchOrders, _ := json.Marshal(orders)
 

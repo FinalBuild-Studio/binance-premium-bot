@@ -23,6 +23,7 @@ func main() {
 	serve := flag.Bool("serve", false, "serve in http mode")
 	threshold := flag.Float64("threshold", 0, "minimum threshold")
 	before := flag.Float64("before", m.DEFAULT_MINUTES, "change direction before n minutes")
+	webhook := flag.String("webhook", "", "notify via webhook")
 	flag.Parse()
 
 	ratelimiter := ratelimit.New(1)
@@ -32,18 +33,22 @@ func main() {
 	} else if *config != "" {
 		m.NewYaml(*config, ratelimiter).Run()
 	} else {
-		m.NewCore(&models.ConfigSetting{
-			ApiKey:     *apiKey,
-			ApiSecret:  *apiSecret,
-			Symbol:     *symbol,
-			Quantity:   *quantity,
-			Total:      *total,
-			Reduce:     *reduce,
-			Arbitrage:  *arbitrage,
-			Difference: *difference,
-			Leverage:   *leverage,
-			Threshold:  *threshold,
-			Before:     *before,
-		}, nil, nil, ratelimiter).Run()
+		setting := &models.ConfigSetting{
+			Symbol:    *symbol,
+			Quantity:  *quantity,
+			Total:     *total,
+			Reduce:    *reduce,
+			Arbitrage: *arbitrage,
+		}
+
+		setting.Difference = *difference
+		setting.Leverage = *leverage
+		setting.Threshold = *threshold
+		setting.Before = *before
+		setting.ApiKey = *apiKey
+		setting.ApiSecret = *apiSecret
+		setting.Webhook = *webhook
+
+		m.NewCore(setting, nil, nil, ratelimiter).Run()
 	}
 }

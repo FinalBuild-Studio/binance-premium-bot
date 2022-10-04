@@ -14,6 +14,7 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 - [x] http server
 - [x] yaml config
 - [x] managed service for whitelist users
+- [x] Notify messages via webhook
 - [ ] persistent storage for http mode
 - [ ] (binance + ftx) perp delta neutral hedge mode
 - [ ] (binance + ftx) perp reduce mode
@@ -82,6 +83,8 @@ Usage of ./binance-premium-bot:
     	minimum threshold
   -total float
     	total quantity
+  -webhook string
+    	notify via webhook
 ```
 
 ## Example (docker for example)
