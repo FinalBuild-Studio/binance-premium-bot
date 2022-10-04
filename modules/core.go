@@ -316,7 +316,7 @@ func (c *Core) Run() {
 
 		for _, v := range hedge {
 			if v.Symbol == c.Setting.Symbol {
-				markPriceDirection := v.GetPrice("BUSD") > v.GetPrice("USDT")
+				markPriceDirection := v.GetPrice("USDT") > v.GetPrice("BUSD")
 
 				logger.Info("MarkPriceGap=", v.MarkPriceGap)
 
@@ -500,22 +500,12 @@ func (c *Core) Run() {
 					Quantity: perQuantity,
 				}
 
-				if arbitrageDirection == nil {
-					if v.Direction {
-						binanceOrderBUSD.Side = "BUY"
-						binanceOrderUSDT.Side = "SELL"
-					} else {
-						binanceOrderBUSD.Side = "SELL"
-						binanceOrderUSDT.Side = "BUY"
-					}
+				if v.Direction {
+					binanceOrderBUSD.Side = "BUY"
+					binanceOrderUSDT.Side = "SELL"
 				} else {
-					if v.Direction {
-						binanceOrderBUSD.Side = "SELL"
-						binanceOrderUSDT.Side = "BUY"
-					} else {
-						binanceOrderBUSD.Side = "BUY"
-						binanceOrderUSDT.Side = "SELL"
-					}
+					binanceOrderBUSD.Side = "SELL"
+					binanceOrderUSDT.Side = "BUY"
 				}
 
 				if c.Setting.Reduce || fundingRateReverseMode {
