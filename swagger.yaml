@@ -1,0 +1,68 @@
+openapi: 3.0.0
+
+info:
+  title: binance-premium-bot
+  version: 0.0.1
+  contact:
+    name: Michael Kuan
+    email: michael34435@capslock.tw
+
+servers:
+  - url: https://example.com
+    description: bot endpoint
+
+paths:
+  /:
+    post:
+      security:
+      - user: []
+      summary: Create a bot
+      responses:
+        200:
+          description: Create a bot
+          content:
+            plain/text:
+              schema:
+                type: string
+                description: return bot uuid
+    get:
+      security:
+      - user: []
+      summary: Show all bot id
+      responses:
+        200:
+          description: Description
+          content:
+            plain/text:
+              schema:
+                type: string
+                description: return all bots' uuid
+    delete:
+      security:
+      - user: []
+      summary: Delete all bots
+      responses:
+        200:
+          description: OK
+  /{id}:
+    delete:
+      security:
+      - user: []
+      parameters:
+      - name: id
+        in: path
+        description: Bot ID
+        required: true
+        schema:
+          type: string
+      summary: Delete a bot
+      responses:
+        200:
+          description: OK
+
+components:
+  securitySchemes:
+    user:
+      type: apiKey
+      in: header
+      name: X-USER
