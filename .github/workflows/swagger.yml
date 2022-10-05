@@ -17,12 +17,17 @@ jobs:
         with:
           action: generate
           input: swagger.yaml
-          language: openapi
+          language: swagger
+      - name: Upload swagger.json
+        uses: actions/upload-artifact@v2
+        with:
+          name: spec-file
+          path: swagger.json
   deploy:
     needs: generate-openapi-spec
     runs-on: ubuntu-latest
     steps:
-      - name: Download openapi.json
+      - name: Download swagger.json
         uses: actions/download-artifact@v2
         with:
           name: spec-file
@@ -30,7 +35,7 @@ jobs:
         uses: Legion2/swagger-ui-action@v1
         with:
           output: swagger-ui
-          spec-file: openapi.json
+          spec-file: swagger.json
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
