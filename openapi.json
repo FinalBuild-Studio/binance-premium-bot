@@ -1,0 +1,154 @@
+{
+  "openapi" : "3.0.0",
+  "info" : {
+    "title" : "binance-premium-bot",
+    "contact" : {
+      "name" : "Michael Kuan",
+      "email" : "michael34435@capslock.tw"
+    },
+    "version" : "0.0.1"
+  },
+  "servers" : [ {
+    "url" : "https://example.com",
+    "description" : "bot endpoint"
+  } ],
+  "paths" : {
+    "/" : {
+      "get" : {
+        "summary" : "Show all bot id",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "plain/text" : {
+                "schema" : {
+                  "type" : "string",
+                  "description" : "return all bots' uuid"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "user" : [ ]
+        } ]
+      },
+      "post" : {
+        "summary" : "Create a bot",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/body"
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "plain/text" : {
+                "schema" : {
+                  "type" : "string",
+                  "description" : "return bot uuid"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "user" : [ ]
+        } ]
+      },
+      "delete" : {
+        "summary" : "Delete all bots",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "user" : [ ]
+        } ]
+      }
+    },
+    "/{id}" : {
+      "delete" : {
+        "summary" : "Delete a bot",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Bot ID",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "user" : [ ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "body" : {
+        "type" : "object",
+        "properties" : {
+          "apiKey" : {
+            "type" : "string"
+          },
+          "apiSecret" : {
+            "type" : "string"
+          },
+          "leverage" : {
+            "type" : "integer"
+          },
+          "difference" : {
+            "type" : "number"
+          },
+          "before" : {
+            "type" : "integer"
+          },
+          "webhook" : {
+            "type" : "string"
+          },
+          "threshold" : {
+            "type" : "number"
+          },
+          "symbol" : {
+            "type" : "string"
+          },
+          "quantity" : {
+            "type" : "number"
+          },
+          "total" : {
+            "type" : "number"
+          },
+          "reduce" : {
+            "type" : "boolean"
+          },
+          "arbitrage" : {
+            "type" : "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "user" : {
+        "type" : "apiKey",
+        "name" : "X-USER",
+        "in" : "header"
+      }
+    }
+  }
+}
