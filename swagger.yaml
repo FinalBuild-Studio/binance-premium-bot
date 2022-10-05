@@ -19,7 +19,7 @@ paths:
       summary: Create a bot
       responses:
         200:
-          description: Create a bot
+          description: OK
           content:
             plain/text:
               schema:
@@ -31,7 +31,7 @@ paths:
       summary: Show all bot id
       responses:
         200:
-          description: Description
+          description: OK
           content:
             plain/text:
               schema:
