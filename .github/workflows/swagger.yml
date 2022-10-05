@@ -17,7 +17,7 @@ jobs:
         with:
           action: generate
           input: swagger.yaml
-          language: swagger
+          language: swagger-yaml
       - name: Upload swagger.json
         uses: actions/upload-artifact@v2
         with:
