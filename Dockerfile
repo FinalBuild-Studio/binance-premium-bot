@@ -1,13 +1,12 @@
 FROM golang:1.19.1-alpine as build
 
-RUN apk add --update git ca-certificates gcc g++
-
 WORKDIR /app
 
 COPY . .
 
-RUN go mod download && \
-  go build -v -o run && \
+RUN apk add --update git ca-certificates gcc g++ musl-dev && \
+  go mod download && \
+  go build -o run && \
   mkdir /data
 
 FROM scratch
