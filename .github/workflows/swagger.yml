@@ -15,7 +15,9 @@ jobs:
       - name: Swagger Codegen
         uses: bjerkio/swagger-codegen-action@v1
         with:
-          args: generate -i swagger.yaml -l openapi
+          args: generate
+          i: swagger.yaml
+          l: openapi
   deploy:
     needs: generate-openapi-spec
     runs-on: ubuntu-latest
