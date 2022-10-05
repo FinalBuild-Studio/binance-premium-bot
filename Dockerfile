@@ -7,10 +7,12 @@ WORKDIR /app
 COPY . .
 
 RUN go mod download && \
-  go build -v -o run
+  go build -v -o run && \
+  mkdir /data
 
 FROM scratch
 
+COPY --from=build /data /data
 COPY --from=build /app/run run
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

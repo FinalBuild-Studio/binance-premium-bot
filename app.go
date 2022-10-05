@@ -25,7 +25,7 @@ func main() {
 	threshold := flag.Float64("threshold", 0, "minimum threshold")
 	before := flag.Float64("before", m.DEFAULT_MINUTES, "change direction before n minutes")
 	webhook := flag.String("webhook", "", "notify via webhook")
-	store := flag.String("store", "/tmp/data.db", "store data in sqlite")
+	store := flag.String("store", "/data/database.db", "store data in sqlite")
 	flag.Parse()
 
 	ratelimiter := ratelimit.New(1)
