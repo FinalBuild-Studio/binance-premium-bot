@@ -130,12 +130,18 @@ func (c *Core) Run() {
 	go func() {
 		for v := range c.GetPublisher() {
 			if v.Setting.Webhook != "" {
+				var ID string
+
+				if c.ID != nil {
+					ID = *c.ID
+				}
+
 				gorequest.
 					New().
 					Post(v.Setting.Webhook).
 					Send(map[string]any{
 						"type":    v.Type,
-						"id":      *c.ID,
+						"id":      ID,
 						"symbol":  v.Setting.Symbol,
 						"message": v.Message,
 					})
@@ -270,6 +276,10 @@ func (c *Core) Run() {
 
 			logger.Info("Send to channel again")
 			c.EventReceiver <- buffered
+		}
+
+		if totalQuantity < 0 {
+			totalQuantity = 0
 		}
 
 		if totalQuantity <= 0 && c.Setting.Reduce && !c.Setting.Arbitrage {
