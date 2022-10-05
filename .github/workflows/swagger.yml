@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Swagger Codegen
-        uses: bjerkio/swagger-codegen-action@v1
+      - name: Swagger Codegen CLI
+        uses: CapsLock-Studio/swagger-codegen-action@v1
         with:
-          args: generate
-          i: swagger.yaml
-          l: openapi
+          action: generate
+          input: swagger.yaml
+          language: openapi
   deploy:
     needs: generate-openapi-spec
     runs-on: ubuntu-latest
