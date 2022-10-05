@@ -4,15 +4,16 @@ WORKDIR /app
 
 COPY . .
 
-RUN apk add --update git ca-certificates gcc g++ musl-dev && \
+RUN apk add --update git ca-certificates gcc musl-dev && \
   go mod download && \
-  go build -o run && \
+  CGO_ENABLED=0 go build -v -o run && \
+  chmod +x run && \
   mkdir /data
 
 FROM scratch
 
 COPY --from=build /data /data
-COPY --from=build /app/run run
+COPY --from=build /app/run /run
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8080
