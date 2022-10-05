@@ -16,6 +16,37 @@ paths:
     post:
       security:
       - user: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apiKey:
+                  type: string
+                apiSecret:
+                  type: string
+                leverage:
+                  type: integer
+                difference:
+                  type: number
+                before:
+                  type: integer
+                webhook:
+                  type: string
+                threshold:
+                  type: number
+                symbol:
+                  type: string
+                quantity:
+                  type: number
+                total:
+                  type: number
+                reduce:
+                  type: boolean
+                arbitrage:
+                  type: boolean
       summary: Create a bot
       responses:
         200:

@@ -82,6 +82,12 @@ func (d *DB) DropUserState(userID string, ID string) error {
 	return err
 }
 
+func (d *DB) DropState(ID string) error {
+	_, err := d.DB.Exec("DELETE FROM `states` WHERE AND id=?", ID)
+
+	return err
+}
+
 func (d *DB) DropUserStates(userID string) error {
 	_, err := d.DB.Exec("DELETE FROM `states` WHERE user_id=", userID)
 

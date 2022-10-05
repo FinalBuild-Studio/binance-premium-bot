@@ -130,4 +130,7 @@ func (h *Http) Bot(setting models.ConfigSetting, ID string) {
 	}()
 
 	NewCore(&setting, h.Channel, &ID, h.RateLimiter).Run()
+
+	// drop state
+	h.DB.DropState(ID)
 }
