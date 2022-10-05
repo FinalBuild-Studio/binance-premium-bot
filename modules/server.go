@@ -1,28 +1,83 @@
 package modules
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/CapsLock-Studio/binance-premium-bot/models"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.uber.org/ratelimit"
 )
 
 type Http struct {
+	Store       string
+	DB          *DB
+	Channel     chan string
 	RateLimiter ratelimit.Limiter
 }
 
-func NewHttp(ratelimiter ratelimit.Limiter) *Http {
+func NewHttp(db *DB, ratelimiter ratelimit.Limiter) *Http {
 	return &Http{
+		Channel:     make(chan string, 10),
+		DB:          db,
 		RateLimiter: ratelimiter,
 	}
 }
 
 func (h *Http) Serve() {
-	ch := make(chan string, 10)
 	route := gin.Default()
+
+	for _, v := range h.DB.GetSates() {
+		var setting models.ConfigSetting
+		if err := json.Unmarshal([]byte(v.Value), &setting); err != nil {
+			log.Fatal(err)
+		}
+
+		go h.Bot(setting, v.ID)
+	}
+
+	route.Use(func(ctx *gin.Context) {
+		userID := ctx.GetHeader("X-USER")
+
+		if userID == "" {
+			ctx.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		ID := ctx.Param("id")
+
+		if ID != "" {
+			forbidden := true
+			states := h.DB.GetUserSates(userID)
+
+			for _, v := range states {
+				if v.ID == ID {
+					forbidden = false
+				}
+			}
+
+			if forbidden {
+				ctx.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+		}
+
+		ctx.Set("user_id", userID)
+	})
+
+	route.GET("/", func(ctx *gin.Context) {
+		states := h.DB.GetUserSates(ctx.GetString("user_id"))
+
+		result := make([]string, 0)
+
+		for _, v := range states {
+			result = append(result, v.ID)
+		}
+
+		ctx.Data(http.StatusOK, "text/plain", []byte(strings.Join(result, "\n")))
+	})
 
 	route.POST("/", func(ctx *gin.Context) {
 		var r models.ConfigSetting
@@ -35,27 +90,44 @@ func (h *Http) Serve() {
 			return
 		}
 
-		ID := uuid.New().String()
+		ID := h.DB.CreateUserState(ctx.GetString("user_id"), r)
 
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					fmt.Println(err)
-				}
-			}()
+		go h.Bot(r, ID)
 
-			NewCore(&r, ch, &ID, h.RateLimiter).Run()
-		}()
-
+		// response
 		ctx.Data(http.StatusOK, "text/plain", []byte(ID))
 	})
 
 	route.DELETE("/:id", func(ctx *gin.Context) {
 		ID := ctx.Param("id")
 
-		ch <- ID
+		h.Channel <- ID
+
+		h.DB.DropUserState(ctx.GetString("user_id"), ID)
+
+		ctx.Data(http.StatusOK, "text/plain", []byte("DONE"))
+	})
+
+	route.DELETE("/", func(ctx *gin.Context) {
+		err := h.DB.DropUserStates(ctx.GetString("usr_id"))
+
+		if err != nil {
+			return
+		}
+
 		ctx.Data(http.StatusOK, "text/plain", []byte("DONE"))
 	})
 
 	route.Run()
+}
+
+func (h *Http) Bot(setting models.ConfigSetting, ID string) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatal(err)
+			return
+		}
+	}()
+
+	NewCore(&setting, h.Channel, &ID, h.RateLimiter).Run()
 }

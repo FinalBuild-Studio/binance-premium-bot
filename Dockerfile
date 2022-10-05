@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine as build
+FROM golang:1.19.1-alpine as build
 
 RUN apk add --update git ca-certificates
 

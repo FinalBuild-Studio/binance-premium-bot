@@ -15,7 +15,7 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 - [x] yaml config
 - [x] managed service for whitelist users
 - [x] Notify messages via webhook
-- [ ] persistent storage for http mode
+- [x] persistent storage for http mode
 - [ ] (binance + ftx) perp delta neutral hedge mode
 - [ ] (binance + ftx) perp reduce mode
 - [ ] binance spot & perp delta neutral hedge mode
@@ -77,6 +77,8 @@ Usage of ./binance-premium-bot:
     	use reduce mode
   -serve
     	serve in http mode
+  -store string
+    	store data in sqlite (default "/tmp/data.db")
   -symbol string
     	binance future symbol
   -threshold float

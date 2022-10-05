@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	"github.com/CapsLock-Studio/binance-premium-bot/models"
 	"go.uber.org/ratelimit"
@@ -24,12 +25,16 @@ func main() {
 	threshold := flag.Float64("threshold", 0, "minimum threshold")
 	before := flag.Float64("before", m.DEFAULT_MINUTES, "change direction before n minutes")
 	webhook := flag.String("webhook", "", "notify via webhook")
+	store := flag.String("store", "/tmp/data.db", "store data in sqlite")
 	flag.Parse()
 
 	ratelimiter := ratelimit.New(1)
 
 	if *serve {
-		m.NewHttp(ratelimiter).Serve()
+		db := m.NewDB(*store, os.Getenv("SECRET"))
+		defer db.Close()
+
+		m.NewHttp(db, ratelimiter).Serve()
 	} else if *config != "" {
 		m.NewYaml(*config, ratelimiter).Run()
 	} else {
