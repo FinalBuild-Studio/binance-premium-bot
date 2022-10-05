@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Swagger Codegen CLI
-        uses: CapsLock-Studio/swagger-codegen-action@v1.1
+        uses: CapsLock-Studio/swagger-codegen-action@v1.2
         with:
           action: generate
           input: swagger.yaml
