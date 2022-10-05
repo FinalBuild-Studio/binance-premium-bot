@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 
 RUN go mod download && \
-  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -a -v -installsuffix cgo -o run
+  go build -a -v -o run
 
 FROM scratch
 
