@@ -16,6 +16,7 @@ It's possible to make incredible APR(**>500%**) in crypto even in :bear: market.
 - [x] managed service for whitelist users
 - [x] Notify messages via webhook
 - [x] persistent storage for http mode
+- [ ] position protection
 - [ ] (binance + ftx) perp delta neutral hedge mode
 - [ ] (binance + ftx) perp reduce mode
 - [ ] binance spot & perp delta neutral hedge mode
