@@ -109,7 +109,7 @@ func (h *Http) Serve() {
 	})
 
 	route.DELETE("/", func(ctx *gin.Context) {
-		err := h.DB.DropUserStates(ctx.GetString("usr_id"))
+		err := h.DB.DropUserStates(ctx.GetString("user_id"))
 
 		if err != nil {
 			return
