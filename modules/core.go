@@ -561,18 +561,18 @@ func (c *Core) Run() {
 						},
 					).End()
 					logrus.Info(string(body))
+
+					// update total
+					value := decimal.
+						NewFromFloat(quantityPerOrder).
+						Mul(decimal.NewFromInt(int64(step)))
+
+					// calculate totalQuantity
+					totalQuantity, _ = decimal.
+						NewFromFloat(totalQuantity).
+						Sub(value).
+						Float64()
 				}
-
-				// update total
-				value := decimal.
-					NewFromFloat(quantityPerOrder).
-					Mul(decimal.NewFromInt(int64(step)))
-
-				// calculate totalQuantity
-				totalQuantity, _ = decimal.
-					NewFromFloat(totalQuantity).
-					Sub(value).
-					Float64()
 
 				// exit loop
 				break
