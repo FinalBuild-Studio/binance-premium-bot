@@ -144,6 +144,7 @@ func (c *Core) Run() {
 						"id":      ID,
 						"symbol":  v.Setting.Symbol,
 						"message": v.Message,
+						"userId":  c.Setting.UserID,
 					})
 			}
 		}

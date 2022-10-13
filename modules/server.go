@@ -35,6 +35,8 @@ func (h *Http) Serve() {
 			log.Fatal(err)
 		}
 
+		setting.UserID = v.UserID
+
 		go h.Bot(setting, v.ID)
 	}
 
@@ -90,7 +92,12 @@ func (h *Http) Serve() {
 			return
 		}
 
-		ID := h.DB.CreateUserState(ctx.GetString("user_id"), r)
+		userID := ctx.GetString("user_id")
+
+		// set user id
+		r.UserID = userID
+
+		ID := h.DB.CreateUserState(userID, r)
 
 		go h.Bot(r, ID)
 

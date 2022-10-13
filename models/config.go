@@ -17,6 +17,7 @@ type ConfigSetting struct {
 	Total     float64 `yaml:"total" json:"total"`
 	Reduce    bool    `yaml:"reduce" json:"reduce"`
 	Arbitrage bool    `yaml:"arbitrage" json:"arbitrage"`
+	UserID    string  `json:"-"`
 }
 
 type Config struct {
