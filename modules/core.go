@@ -182,37 +182,22 @@ func (c *Core) Run() {
 	var arbitrageDirection *bool
 	var arbitrageTriggered bool
 
-	openPositionForUSDT := make([]models.BinanceOrder, 0)
-	openPositionForBUSD := make([]models.BinanceOrder, 0)
-	wg := &sync.WaitGroup{}
+	openPositions := make([]models.BinanceOrder, 0)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		c.MakeRequest(
-			BINANCE_FAPI_OPEN_ORDERS,
-			gorequest.GET,
-			map[string]string{
-				"symbol":     c.Setting.Symbol + "USDT",
-				"recvWindow": "5000",
-			},
-		).EndStruct(&openPositionForUSDT)
-	}()
+	c.MakeRequest(
+		BINANCE_FAPI_OPEN_ORDERS,
+		gorequest.GET,
+		map[string]string{
+			"recvWindow": "5000",
+		},
+	).EndStruct(&openPositions)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		c.MakeRequest(
-			BINANCE_FAPI_OPEN_ORDERS,
-			gorequest.GET,
-			map[string]string{
-				"symbol":     c.Setting.Symbol + "BUSD",
-				"recvWindow": "5000",
-			},
-		).EndStruct(&openPositionForBUSD)
-	}()
-
-	wg.Wait()
+	openPositionForUSDT := filter(openPositions, func(v models.BinanceOrder) bool {
+		return v.Symbol == c.Setting.Symbol+"USDT"
+	})
+	openPositionForBUSD := filter(openPositions, func(v models.BinanceOrder) bool {
+		return v.Symbol == c.Setting.Symbol+"BUSD"
+	})
 
 	if len(openPositionForBUSD) > 0 && len(openPositionForUSDT) > 0 {
 		openQtyForBUSD, _ := decimal.NewFromString(openPositionForBUSD[0].PositionAmt)
@@ -581,4 +566,26 @@ func (c *Core) Run() {
 
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func filter[T any](slice []T, f func(T) bool) []T {
+	var n []T
+	for _, e := range slice {
+		if f(e) {
+			n = append(n, e)
+		}
+	}
+	return n
+}
+
+// TODO
+func sum[T any](slice []T, f func(T) float64) float64 {
+	var n float64
+	for _, e := range slice {
+		n, _ = decimal.
+			NewFromFloat(n).
+			Add(decimal.NewFromFloat(f(e))).
+			Float64()
+	}
+	return n
 }
